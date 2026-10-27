@@ -3,130 +3,133 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>University Portal — Live Extension & DevTools Defense</title>
+  <title>Zero-Trust University Portal — Pre-Boot DevTools & Extension Defense</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style id="core-trusted-styles">
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
-    body { font-family: 'Inter', sans-serif; }
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
     .mono { font-family: 'JetBrains Mono', monospace; }
-    /* CSS Color Canary: Must remain exact rgb(254, 254, 254) unless tampered with by a Dark Theme extension */
+    /* CSS Color Canary: Detects Dark Reader / forced dark themes */
     #css-integrity-canary {
       background-color: rgb(254, 254, 254);
       color: rgb(17, 24, 39);
       position: fixed;
       bottom: -9999px;
       left: -9999px;
-      width: 1px;
-      height: 1px;
+      width: 2px;
+      height: 2px;
       pointer-events: none;
     }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col lg:flex-row overflow-x-hidden">
 
-  <!-- HIDDEN CSS INTEGRITY CANARY (Detects Dark Reader / Browser-level CSS Filters) -->
+  <!-- HIDDEN CSS INTEGRITY CANARY -->
   <div id="css-integrity-canary" aria-hidden="true"></div>
 
-  <!-- LEFT PANEL: LIVE SECURITY CONTROL & TELEMETRY -->
+  <!-- LEFT PANEL: ZERO-TRUST SECURITY CONTROL & TELEMETRY -->
   <aside class="w-full lg:w-96 bg-slate-900 border-r border-slate-800 p-5 flex flex-col gap-4 shrink-0 z-20">
     <div class="flex items-center justify-between border-b border-slate-800 pb-3">
       <div>
-        <span class="text-xs uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold">Vercel Live Ready</span>
-        <h1 class="text-lg font-bold mt-1 text-white">Defense Control Center</h1>
+        <span class="text-[11px] uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold">Zero-Trust v3.0</span>
+        <h1 class="text-lg font-bold mt-1 text-white">Pre-Boot Defense Engine</h1>
       </div>
       <div id="shield-status" class="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" title="Shield Active"></div>
     </div>
 
-    <!-- Real-World Detection Toggles -->
-    <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-3.5 space-y-2.5 text-xs">
-      <div class="font-semibold text-slate-300 uppercase tracking-wider mb-1">Active Protection Modules</div>
+    <!-- Active Defense Modules -->
+    <div class="bg-slate-950/90 border border-slate-800 rounded-lg p-3.5 space-y-2 text-xs">
+      <div class="font-semibold text-slate-300 uppercase tracking-wider mb-1">Active Protection Layers</div>
 
       <label class="flex items-center justify-between cursor-pointer">
-        <span class="text-slate-300">1. Full DOM (`html`/`head`/`body`) Watcher</span>
-        <input type="checkbox" id="toggle-dom-watch" checked class="accent-emerald-500 h-4 w-4" />
+        <span class="text-slate-300">1. Pre-Boot Docked DevTools Check</span>
+        <input type="checkbox" id="toggle-docked-devtools" checked class="accent-emerald-500 h-4 w-4" />
       </label>
 
       <label class="flex items-center justify-between cursor-pointer">
-        <span class="text-slate-300">2. Real Dark-Theme / CSS Filter Canary</span>
-        <input type="checkbox" id="toggle-css-canary" checked class="accent-emerald-500 h-4 w-4" />
+        <span class="text-slate-300">2. Floating DevTools (`debugger` + Console Trap)</span>
+        <input type="checkbox" id="toggle-debugger-trap" checked class="accent-emerald-500 h-4 w-4" />
       </label>
 
       <label class="flex items-center justify-between cursor-pointer">
-        <span class="text-slate-300">3. Block Right-Click & DevTools Shortcuts</span>
-        <input type="checkbox" id="toggle-inspect-block" checked class="accent-emerald-500 h-4 w-4" />
+        <span class="text-slate-300">3. Full DOM + Dark-Theme CSS Canary</span>
+        <input type="checkbox" id="toggle-dom-canary" checked class="accent-emerald-500 h-4 w-4" />
       </label>
 
       <label class="flex items-center justify-between cursor-pointer">
-        <span class="text-slate-300">4. Lock on DevTools Open / Resize</span>
-        <input type="checkbox" id="toggle-devtools-lock" checked class="accent-emerald-500 h-4 w-4" />
+        <span class="text-slate-300">4. Canvas Pixel Rendering (Zero Text in DOM)</span>
+        <input type="checkbox" id="toggle-canvas-render" checked onchange="rotateSessionSelectors()" class="accent-emerald-500 h-4 w-4" />
       </label>
 
-      <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
-        <span class="text-slate-400">Response Mode:</span>
-        <select id="response-mode" class="bg-slate-800 text-white rounded px-2 py-1 border border-slate-700 text-xs">
-          <option value="lockdown" selected>Immediate Lockdown</option>
-          <option value="log">Log-Only (No Lockout)</option>
-        </select>
-      </div>
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-slate-300">5. Block Shortcuts / Copy / Context Menu</span>
+        <input type="checkbox" id="toggle-shortcuts" checked class="accent-emerald-500 h-4 w-4" />
+      </label>
     </div>
 
-    <!-- Manual Scan & Test Actions -->
+    <!-- Simulator Buttons -->
     <div class="space-y-2">
-      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Test Real or Simulated Attacks</div>
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Test Attacks &amp; Scrapers</div>
 
-      <button onclick="runFullIntegrityAudit(true)" class="w-full py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition flex items-center justify-between">
-        <span>Scan for Active Browser Extensions Now</span>
-        <span class="mono bg-indigo-800 px-1.5 py-0.5 rounded text-[10px]">AUDIT</span>
+      <button onclick="attemptTextScrape()" class="w-full py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition flex items-center justify-between">
+        <span>Try Scraping `innerText` of Student Cards</span>
+        <span class="mono bg-indigo-900 px-1.5 py-0.5 rounded text-[10px]">CANVAS TEST</span>
       </button>
 
       <button onclick="simulateDarkThemeExtension()" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-medium text-xs transition text-left">
-        Simulate Real Dark Theme (`&lt;head&gt;` Style + Root Attr)
+        Simulate Real Dark Theme (`&lt;head&gt;` + Root Attr)
       </button>
 
-      <button onclick="simulateHoneypotScrape()" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-medium text-xs transition text-left">
-        Trigger Honeypot Node &amp; Decoy API (#999999)
+      <button onclick="simulateFetchHookAttack()" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-medium text-xs transition text-left">
+        Simulate Extension Hooking `window.fetch`
       </button>
 
       <button onclick="rotateSessionSelectors()" class="w-full py-2 px-3 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-700/50 text-emerald-300 font-medium text-xs transition text-left">
-        Re-Randomize Obfuscated Selectors (Layer 1)
+        Rotate Obfuscated Selectors &amp; Redraw Canvas
       </button>
     </div>
 
     <!-- Live Security Telemetry Log -->
-    <div class="flex-1 flex flex-col min-h-[200px] bg-black/80 border border-slate-800 rounded-lg overflow-hidden">
+    <div class="flex-1 flex flex-col min-h-[220px] bg-black/90 border border-slate-800 rounded-lg overflow-hidden">
       <div class="bg-slate-900 px-3 py-1.5 border-b border-slate-800 flex justify-between items-center text-[11px] text-slate-400">
-        <span class="mono font-semibold text-slate-300">LIVE SECURITY TELEMETRY</span>
+        <span class="mono font-semibold text-slate-300">ZERO-TRUST TELEMETRY</span>
         <button onclick="clearTelemetry()" class="hover:text-white">Clear</button>
       </div>
-      <div id="telemetry-log" class="p-3 space-y-1.5 overflow-y-auto mono text-[11px] flex-1 max-h-64"></div>
+      <div id="telemetry-log" class="p-3 space-y-1.5 overflow-y-auto mono text-[11px] flex-1 max-h-72"></div>
     </div>
   </aside>
 
-  <!-- RIGHT PANEL: PROTECTED UNIVERSITY STUDENT PORTAL -->
+  <!-- RIGHT PANEL: PROTECTED UNIVERSITY PORTAL -->
   <main class="flex-1 bg-white text-slate-900 relative flex flex-col" id="portal-root">
-    <!-- Top Bar -->
+    <!-- Top Header -->
     <header class="border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4 bg-slate-50">
       <div>
-        <span class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Protected Academic Session</span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Zero-Trust Deferred DOM Mounting</span>
         <h2 class="text-xl font-bold text-slate-900">University Student Portal</h2>
       </div>
-      <div class="flex items-center gap-3 text-xs">
-        <span class="px-2.5 py-1 rounded-full bg-slate-200 text-slate-700 mono" id="session-badge">Session: #A9F-2026</span>
-        <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-medium">WeakSet DOM Guard: Armed</span>
+      <div class="flex items-center gap-2 text-xs">
+        <span class="px-2.5 py-1 rounded-full bg-slate-200 text-slate-700 mono" id="session-badge">Gate: Verifying...</span>
+        <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-medium" id="render-mode-badge">Canvas Anti-Scrape: ON</span>
       </div>
     </header>
 
-    <!-- Protected Data Content -->
+    <!-- Main Portal Viewport -->
     <div id="portal-viewport" class="p-6 space-y-6 flex-1">
-      <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-xs text-amber-900 space-y-1">
-        <div class="font-bold">How to test your real browser extensions on Vercel right now:</div>
-        <p>1. Enable your browser's <strong>Dark Reader / Dark Theme extension</strong> on this Vercel URL — the portal now watches <code>&lt;html&gt;</code>, <code>&lt;head&gt;</code>, and computed RGB colors and will immediately lock the session.</p>
-        <p>2. Try pressing <strong>F12</strong>, <strong>Ctrl+Shift+I</strong>, or <strong>Right-Click &rarr; Inspect</strong> — the shortcut is intercepted and logged, or opening docked DevTools triggers lockdown.</p>
+      <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 text-xs text-indigo-950 space-y-1.5">
+        <div class="font-bold text-indigo-900">Why the "Open New Tab &rarr; Open Inspect &rarr; Visit URL" trick is now blocked:</div>
+        <p>1. <strong>Pre-Boot Gate:</strong> Sensitive data is <em>never</em> present in the initial HTML. The page runs an absolute viewport differential check (`outerWidth - innerWidth`), a `console` getter serialization trap, and a `debugger` timing probe <strong>before</strong> mounting records.</p>
+        <p>2. <strong>Canvas Pixel Rendering:</strong> Sensitive values below are painted onto HTML5 <code>&lt;canvas&gt;</code> elements with visual security noise—even if a stealth extension reads <code>document.body.innerText</code>, the text does not exist in the DOM.</p>
       </div>
 
-      <!-- Obfuscated Student Record Cards -->
+      <!-- Sensitive Data Container (Starts Empty Until Pre-Flight Security Check Passes!) -->
       <div id="sensitive-data-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Populated dynamically with randomized selectors -->
+        <div class="col-span-3 p-6 text-center text-slate-400 mono text-xs border border-slate-200 rounded-xl">
+          Running Pre-Boot DevTools &amp; Extension Integrity Verification...
+        </div>
       </div>
 
       <!-- Hidden DOM Honeypot Trap -->
@@ -134,42 +137,46 @@
         <div id="hp-node" data-record-id="999999" class="student-cgpa-secret">4.00 | NID: 9999990001 | API_KEY_CANARY</div>
       </div>
 
-      <!-- Live Inspector Table showing current randomized selectors & root attributes -->
+      <!-- Live Telemetry Metrics Table -->
       <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
-        <div class="px-4 py-3 bg-slate-100 border-b border-slate-200 flex justify-between items-center">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-700">Live Document &amp; Selector Integrity Monitor</span>
-          <span id="canary-rgb-readout" class="mono text-xs text-slate-600">Canary RGB: checking...</span>
+        <div class="px-4 py-3 bg-slate-100 border-b border-slate-200 flex flex-wrap justify-between items-center gap-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-700">Live Pre-Boot &amp; Runtime Integrity Metrics</span>
+          <span id="viewport-diff-readout" class="mono text-xs text-indigo-700 font-semibold">Viewport Diff: checking...</span>
         </div>
         <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs mono" id="inspector-readout"></div>
       </div>
     </div>
 
     <!-- LAYER 4: AUTOMATIC FULL-SCREEN LOCKDOWN OVERLAY -->
-    <div id="lockdown-modal" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-6">
+    <div id="lockdown-modal" class="hidden fixed inset-0 bg-slate-950/98 backdrop-blur-lg z-50 flex items-center justify-center p-6">
       <div class="max-w-lg w-full bg-slate-900 border-2 border-rose-500 rounded-2xl p-6 shadow-2xl text-slate-100 space-y-4">
         <div class="flex items-center gap-3 text-rose-400">
-          <svg class="w-8 h-8 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-9 h-9 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
           </svg>
           <div>
-            <span class="text-[11px] font-bold uppercase tracking-widest bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded">Layer 4 Triggered — Session Terminated</span>
-            <h3 class="text-xl font-bold text-white mt-0.5">Suspicious Extension or Tampering Detected</h3>
+            <span class="text-[11px] font-bold uppercase tracking-widest bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded">Zero-Trust Lockdown Active</span>
+            <h3 class="text-xl font-bold text-white mt-0.5">DevTools or Extension Tampering Blocked</h3>
           </div>
         </div>
 
         <p class="text-sm text-slate-300 leading-relaxed">
-          Your session has been locked and <strong>all sensitive academic and personal records have been physically purged from the page DOM</strong>. Please disable third-party UI/Dark-Theme extensions or close Developer Tools, then re-verify with OTP.
+          We detected <strong>pre-opened Developer Tools, an active UI/Dark-Theme extension, or unauthorized runtime hooking</strong>. Sensitive records have been purged from memory and Canvas buffers have been zeroed out.
         </p>
 
-        <div class="bg-black/60 border border-rose-500/40 rounded-lg p-3 mono text-xs text-rose-300 space-y-1">
-          <div class="text-slate-400">Incident Forensic Reason:</div>
-          <div id="lockdown-reason" class="font-semibold text-rose-400">Unauthorized DOM modification</div>
+        <div class="bg-black/70 border border-rose-500/40 rounded-lg p-3 mono text-xs text-rose-300 space-y-1">
+          <div class="text-slate-400">Forensic Trigger Reason:</div>
+          <div id="lockdown-reason" class="font-semibold text-rose-400">Pre-opened DevTools detected at boot</div>
         </div>
 
-        <div class="pt-2 flex flex-col sm:flex-row gap-3">
-          <input type="text" id="otp-input" value="849201" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm mono text-white flex-1" placeholder="Enter 6-digit OTP" />
+        <div class="text-xs text-amber-300 bg-amber-950/50 border border-amber-700/50 rounded p-2.5">
+          <strong>To unlock:</strong> Close Developer Tools (Inspect Mode) or disable the browser extension first, then click Verify below. If Inspect Mode is still open, the gate will immediately re-lock!
+        </div>
+
+        <div class="pt-1 flex flex-col sm:flex-row gap-3">
+          <input type="text" id="otp-input" value="918273" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm mono text-white flex-1" placeholder="Enter 6-digit OTP" />
           <button onclick="unlockAndRestoreSession()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">
-            Verify OTP &amp; Restore Clean Session
+            Verify OTP &amp; Re-Run Pre-Flight Check
           </button>
         </div>
       </div>
@@ -178,17 +185,25 @@
 
   <script>
     // ============================================================================
-    // STATE & TRUSTED WEAKSET REGISTRY
+    // 1. FREEZE NATIVE REFERENCES AT BOOT (Detect fetch/XHR Monkey-Patching)
     // ============================================================================
+    const ORIGINAL_FETCH = window.fetch;
+    const ORIGINAL_XHR_OPEN = XMLHttpRequest.prototype.open;
     const trustedNodes = new WeakSet();
     let isLockedDown = false;
     let currentSelectors = {};
 
-    const SENSITIVE_RECORDS = [
-      { label: "Student Name & ID", value: "Tariqul Islam (ID: 2026-88412)", meta: "B.Sc. in Computer Science" },
-      { label: "Cumulative GPA (CGPA)", value: "3.92 / 4.00", meta: "Dean's Honors List — Fall 2026" },
-      { label: "Financial & NID Record", value: "NID: 19994820194 | Due: $0.00", meta: "Scholarship Tier A Verified" }
-    ];
+    // ============================================================================
+    // 2. SENSITIVE DATA STORED INSIDE CLOSURE (Never in global window scope)
+    // ============================================================================
+    const getVaultRecords = (() => {
+      const vault = [
+        { label: "Student Name & ID", secret: "Tariqul Islam (#2026-88412)", sub: "B.Sc. Computer Science" },
+        { label: "Official CGPA Record", secret: "CGPA: 3.92 / 4.00", sub: "Verified Registrar Transcript" },
+        { label: "National ID & Financials", secret: "NID: 19994820194 | Paid", sub: "Scholarship Tier-A Active" }
+      ];
+      return () => isLockedDown ? [] : vault;
+    })();
 
     function randomHash(len = 7) {
       const chars = 'abcdefghijklmnopqrstuvwxyz';
@@ -218,7 +233,6 @@
       logEvent('INFO', 'Telemetry console cleared.');
     }
 
-    // Register all existing legitimate nodes at boot
     function registerSubtree(root) {
       if (!root) return;
       trustedNodes.add(root);
@@ -228,12 +242,48 @@
     }
 
     // ============================================================================
-    // LAYER 1: RANDOMIZED SELECTORS RENDERING
+    // 3. CANVAS SHADOW-RENDERING (Defeats silent innerText / textContent scrapers)
     // ============================================================================
+    function drawSecretOnCanvas(canvas, text) {
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const width = 280;
+      const height = 36;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      ctx.scale(dpr, dpr);
+
+      // Subtle background & anti-OCR security mesh lines
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, Math.random() * height);
+        ctx.lineTo(width, Math.random() * height);
+        ctx.stroke();
+      }
+
+      // Draw actual sensitive text as pixels (no DOM text node exists!)
+      ctx.font = '700 15px Inter, sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText(text, 8, 23);
+    }
+
     function renderProtectedData() {
+      if (isLockedDown) return;
       const container = document.getElementById('sensitive-data-container');
       if (!container) return;
       container.innerHTML = '';
+
+      const useCanvas = document.getElementById('toggle-canvas-render').checked;
+      document.getElementById('render-mode-badge').textContent = useCanvas
+        ? 'Canvas Anti-Scrape: ON'
+        : 'Canvas Anti-Scrape: OFF (DOM Text)';
 
       currentSelectors = {
         nameCardId: randomHash(),
@@ -243,20 +293,39 @@
       };
 
       const ids = [currentSelectors.nameCardId, currentSelectors.cgpaCardId, currentSelectors.finCardId];
+      const records = getVaultRecords();
 
-      SENSITIVE_RECORDS.forEach((rec, idx) => {
+      records.forEach((rec, idx) => {
         const card = document.createElement('div');
         card.id = ids[idx];
-        card.className = `${currentSelectors.sharedClass} p-4 rounded-xl border border-slate-200 bg-white shadow-sm space-y-1.5`;
+        card.className = `${currentSelectors.sharedClass} p-4 rounded-xl border border-slate-200 bg-white shadow-sm space-y-2`;
 
-        card.innerHTML = `
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500">${rec.label}</span>
-            <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">#${ids[idx]} .${currentSelectors.sharedClass}</span>
-          </div>
-          <div class="text-lg font-bold text-slate-900">${rec.value}</div>
-          <div class="text-xs text-slate-500">${rec.meta}</div>
+        const header = document.createElement('div');
+        header.className = 'flex items-center justify-between';
+        header.innerHTML = `
+          <span class="text-xs font-semibold text-slate-500">${rec.label}</span>
+          <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">#${ids[idx]}</span>
         `;
+
+        const bodyHolder = document.createElement('div');
+        if (useCanvas) {
+          const cnv = document.createElement('canvas');
+          cnv.className = 'rounded border border-slate-200';
+          drawSecretOnCanvas(cnv, rec.secret);
+          bodyHolder.appendChild(cnv);
+        } else {
+          bodyHolder.className = 'text-base font-bold text-slate-900';
+          bodyHolder.textContent = rec.secret;
+        }
+
+        const footer = document.createElement('div');
+        footer.className = 'text-xs text-slate-500';
+        footer.textContent = rec.sub;
+
+        card.appendChild(header);
+        card.appendChild(bodyHolder);
+        card.appendChild(footer);
+
         registerSubtree(card);
         container.appendChild(card);
       });
@@ -264,271 +333,293 @@
       updateInspectorReadout();
     }
 
+    // ============================================================================
+    // 4. MULTI-VECTOR DEVTOOLS DETECTOR (Catches Pre-Opened & Undocked DevTools!)
+    // ============================================================================
+    function detectPreOpenedOrActiveDevTools() {
+      // VECTOR A: Absolute Outer vs Inner Window Differential (Catches Pre-Opened Docked DevTools on Page Load)
+      if (document.getElementById('toggle-docked-devtools').checked) {
+        const widthDiff = Math.abs(window.outerWidth - window.innerWidth);
+        const heightDiff = Math.abs(window.outerHeight - window.innerHeight);
+
+        const readout = document.getElementById('viewport-diff-readout');
+        if (readout) {
+          readout.textContent = `Outer-Inner Diff: W=${widthDiff}px, H=${heightDiff}px`;
+        }
+
+        // Normal browser side borders are ~0-24px; normal top tab/address bar is ~70-150px.
+        // If DevTools is already open & docked before visiting the site, widthDiff > 160 or heightDiff > 240.
+        if (window.outerWidth > 0 && (widthDiff > 160 || heightDiff > 240)) {
+          triggerLockdown(`Pre-opened or docked Inspect Mode detected at boot/runtime (Viewport differential: W=${widthDiff}px, H=${heightDiff}px).`);
+          return true;
+        }
+      }
+
+      // VECTOR B: Console Getter Serialization + Debugger Timing Probe (Catches Undocked / Floating DevTools)
+      if (document.getElementById('toggle-debugger-trap').checked) {
+        let getterTriggered = false;
+        const probe = new Image();
+        Object.defineProperty(probe, 'id', {
+          get: function () {
+            getterTriggered = true;
+            return 'devtools-probe';
+          }
+        });
+
+        const t0 = performance.now();
+        console.debug(probe);
+        // When DevTools is open, debugger statement pauses execution or causes >80ms delay
+        debugger;
+        const elapsed = performance.now() - t0;
+
+        if (getterTriggered || elapsed > 85) {
+          triggerLockdown(`Active Developer Tools detected via ${getterTriggered ? 'Console Object Getter Trap' : `Debugger Timing Anomaly (${Math.round(elapsed)}ms)`}.`);
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    // ============================================================================
+    // 5. FULL EXTENSION, HEAD, ATTRIBUTE & NETWORK INTEGRITY AUDIT
+    // ============================================================================
+    function runSecurityAudit() {
+      // 1. Check DevTools (Pre-opened Docked or Undocked)
+      if (detectPreOpenedOrActiveDevTools()) return true;
+
+      if (document.getElementById('toggle-dom-canary').checked) {
+        // 2. Scan <html> and <body> attributes for Dark Reader / Theme extensions
+        for (const rootEl of [document.documentElement, document.body]) {
+          for (const attr of Array.from(rootEl.attributes)) {
+            const name = attr.name.toLowerCase();
+            const val = (attr.value || '').toLowerCase();
+            if (name.includes('darkreader') || name.includes('nighteye') || val.includes('darkreader') || val.includes('darkmode')) {
+              triggerLockdown(`Extension root attribute detected on <${rootEl.tagName.toLowerCase()}> (${attr.name}="${attr.value}").`);
+              return true;
+            }
+          }
+        }
+
+        // 3. Scan <head> for injected extension stylesheets
+        const badStyles = document.head.querySelectorAll('style.darkreader, style[id*="dark"], link[href*="chrome-extension://"], link[href*="moz-extension://"]');
+        if (badStyles.length > 0) {
+          triggerLockdown(`Injected extension stylesheet found in <head> (${badStyles[0].tagName}.${badStyles[0].className}).`);
+          return true;
+        }
+
+        // 4. Check Computed CSS Color Canary (Detects forced dark mode / CSS filter: invert)
+        const canary = document.getElementById('css-integrity-canary');
+        if (canary) {
+          const computed = window.getComputedStyle(canary);
+          const bg = computed.backgroundColor;
+          const rootFilter = window.getComputedStyle(document.documentElement).filter;
+          if (bg !== 'rgb(254, 254, 254)' && bg !== 'rgba(254, 254, 254, 1)') {
+            triggerLockdown(`CSS Canary color altered to ${bg} (Dark Theme extension active).`);
+            return true;
+          }
+          if (rootFilter && rootFilter !== 'none') {
+            triggerLockdown(`Root CSS filter tampering detected (filter: ${rootFilter}).`);
+            return true;
+          }
+        }
+      }
+
+      // 5. Verify window.fetch & XMLHttpRequest haven't been monkey-patched by an extension
+      if (window.fetch !== ORIGINAL_FETCH || XMLHttpRequest.prototype.open !== ORIGINAL_XHR_OPEN) {
+        triggerLockdown('Network API tampering detected: window.fetch or XMLHttpRequest was hooked by an external script.');
+        return true;
+      }
+
+      updateInspectorReadout();
+      return false;
+    }
+
+    // ============================================================================
+    // 6. LOCKDOWN EXECUTION & ZEROING CANVAS BUFFERS
+    // ============================================================================
+    function triggerLockdown(reason) {
+      if (isLockedDown) return;
+      isLockedDown = true;
+      logEvent('CRITICAL', `LOCKDOWN: ${reason}`);
+
+      // Wipe all canvas pixels & DOM nodes immediately
+      document.querySelectorAll('canvas').forEach(cnv => {
+        const ctx = cnv.getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, cnv.width, cnv.height);
+      });
+
+      const container = document.getElementById('sensitive-data-container');
+      if (container) {
+        container.innerHTML = `
+          <div class="col-span-3 p-6 rounded-xl border-2 border-dashed border-rose-300 bg-rose-50 text-rose-900 text-center text-sm font-semibold">
+            [ZERO-TRUST LOCKDOWN: DATA BLOCKED FROM RENDERING / PURGED FROM DOM]
+          </div>
+        `;
+        registerSubtree(container);
+      }
+
+      document.getElementById('lockdown-reason').textContent = reason;
+      document.getElementById('lockdown-modal').classList.remove('hidden');
+      document.getElementById('shield-status').className = 'h-3 w-3 rounded-full bg-rose-500 animate-ping';
+      document.getElementById('session-badge').textContent = 'Gate: LOCKED';
+    }
+
+    function unlockAndRestoreSession() {
+      // Clean up any simulated extension artifacts
+      document.querySelectorAll('.simulated-ext-node').forEach(el => el.remove());
+      document.documentElement.removeAttribute('data-darkreader-mode');
+      window.fetch = ORIGINAL_FETCH;
+
+      isLockedDown = false;
+
+      // Immediately re-run the pre-flight check! If DevTools is STILL open, it will refuse to unlock!
+      const failedAgain = runSecurityAudit();
+      if (failedAgain) {
+        logEvent('WARN', 'Unlock rejected: DevTools or extension is still active!');
+        return;
+      }
+
+      document.getElementById('lockdown-modal').classList.add('hidden');
+      document.getElementById('shield-status').className = 'h-3 w-3 rounded-full bg-emerald-400 animate-pulse';
+      rotateSessionSelectors();
+      logEvent('INFO', 'Pre-flight check passed. Clean session restored.');
+    }
+
     function rotateSessionSelectors() {
       if (isLockedDown) return;
       renderProtectedData();
-      document.getElementById('session-badge').textContent = `Session: #${randomHash(4).toUpperCase()}-2026`;
-      logEvent('INFO', `Layer 1 rotated selectors -> #${currentSelectors.nameCardId}, #${currentSelectors.cgpaCardId}`);
+      document.getElementById('session-badge').textContent = `Session: #${randomHash(4).toUpperCase()}-VERIFIED`;
+      logEvent('INFO', `Rotated obfuscated selectors & redrew Canvas buffers (#${currentSelectors.nameCardId}).`);
     }
 
     function updateInspectorReadout() {
       const box = document.getElementById('inspector-readout');
       if (!box) return;
       const htmlAttrs = Array.from(document.documentElement.attributes).map(a => `${a.name}="${a.value}"`).join(' ');
-      const headStyles = document.head.querySelectorAll('style, link[rel="stylesheet"]').length;
+      const canaryBg = window.getComputedStyle(document.getElementById('css-integrity-canary')).backgroundColor;
       box.innerHTML = `
         <div class="p-2.5 bg-white rounded border border-slate-200">
-          <div class="text-slate-400 mb-1">&lt;html&gt; Root Attributes:</div>
-          <div class="text-slate-800 break-all">${htmlAttrs || 'none'}</div>
+          <div class="text-slate-400 mb-1">&lt;html&gt; Root Attributes &amp; Canary:</div>
+          <div class="text-slate-800 break-all">Attrs: ${htmlAttrs || 'clean'}</div>
+          <div class="text-emerald-700 mt-1">Canary RGB: ${canaryBg}</div>
         </div>
         <div class="p-2.5 bg-white rounded border border-slate-200">
           <div class="text-slate-400 mb-1">Active Obfuscated Selectors:</div>
-          <div class="text-indigo-700">#${currentSelectors.nameCardId} / #${currentSelectors.cgpaCardId} / .${currentSelectors.sharedClass}</div>
-          <div class="text-slate-500 mt-1">&lt;head&gt; Style Nodes Count: ${headStyles}</div>
+          <div class="text-indigo-700">#${currentSelectors.nameCardId || 'none'} / #${currentSelectors.cgpaCardId || 'none'}</div>
+          <div class="text-slate-600 mt-1">fetch() Integrity: ${window.fetch === ORIGINAL_FETCH ? 'NATIVE (Clean)' : 'HOOKED'}</div>
         </div>
       `;
       registerSubtree(box);
     }
 
     // ============================================================================
-    // LAYER 4: LOCKDOWN EXECUTION (PURGES SENSITIVE DOM DATA)
+    // 7. SIMULATOR ACTIONS FOR TESTING
     // ============================================================================
-    function triggerLockdown(reason) {
-      const mode = document.getElementById('response-mode').value;
-      logEvent('CRITICAL', `TRIPWIRE FIRED: ${reason}`);
-
-      if (mode === 'log') {
-        logEvent('WARN', 'Log-Only Mode active: Sensitive DOM preserved, alert recorded.');
-        updateInspectorReadout();
-        return;
-      }
-
-      if (isLockedDown) return;
-      isLockedDown = true;
-
-      // 1. Physically remove sensitive records from the DOM
+    function attemptTextScrape() {
       const container = document.getElementById('sensitive-data-container');
-      if (container) {
-        container.innerHTML = `
-          <div class="col-span-3 p-6 rounded-xl border-2 border-dashed border-rose-300 bg-rose-50 text-rose-900 text-center text-sm font-semibold">
-            [SENSITIVE DOM NODES SCRUBBED FROM MEMORY BY LAYER 4 LOCKDOWN]
-          </div>
-        `;
-        registerSubtree(container);
-      }
-
-      // 2. Display Lockdown Screen
-      document.getElementById('lockdown-reason').textContent = reason;
-      document.getElementById('lockdown-modal').classList.remove('hidden');
-      document.getElementById('shield-status').className = 'h-3 w-3 rounded-full bg-rose-500 animate-ping';
+      const scrapedText = container ? container.innerText.replace(/\s+/g, ' ').trim() : '';
+      logEvent('WARN', `Extension scraped container.innerText -> "${scrapedText}" (Notice: Actual CGPA 3.92 & NID numbers are invisible because they are Canvas pixels!)`);
     }
 
-    function unlockAndRestoreSession() {
-      // Remove any injected simulated extension nodes or darkreader attributes so it doesn't immediately re-lock
-      document.querySelectorAll('.simulated-ext-node').forEach(el => el.remove());
-
-      isLockedDown = false;
-      document.getElementById('lockdown-modal').classList.add('hidden');
-      document.getElementById('shield-status').className = 'h-3 w-3 rounded-full bg-emerald-400 animate-pulse';
-      rotateSessionSelectors();
-      logEvent('INFO', 'OTP verified. Clean session restored with new randomized selectors.');
-    }
-
-    // ============================================================================
-    // LAYER 3A: FULL-DOCUMENT MUTATION OBSERVER (Watches <html>, <head>, and <body>)
-    // ============================================================================
-    const EXTENSION_ATTR_SIGNATURES = [
-      'data-darkreader-mode',
-      'data-darkreader-scheme',
-      'data-darkreader-Inline-bgcolor',
-      'data-darkreader-inline-color',
-      'nighteye',
-      'data-theme-ext'
-    ];
-
-    const observer = new MutationObserver((mutations) => {
-      if (!document.getElementById('toggle-dom-watch').checked) return;
-
-      for (const m of mutations) {
-        // Check attribute tampering on <html>, <body>, or portal elements (catches Dark Reader / theme extensions)
-        if (m.type === 'attributes') {
-          const attrName = m.attributeName?.toLowerCase() || '';
-          const targetTag = m.target.tagName?.toLowerCase() || '';
-          if (
-            attrName.includes('darkreader') ||
-            attrName.includes('nighteye') ||
-            EXTENSION_ATTR_SIGNATURES.includes(attrName) ||
-            ((targetTag === 'html' || targetTag === 'body') && (attrName === 'style' || attrName === 'class') && !trustedNodes.has(m.target))
-          ) {
-            triggerLockdown(`Unauthorized attribute "${attrName}" injected onto <${targetTag}> by browser extension.`);
-            return;
-          }
-          // Even if <html> is in trustedNodes, inspect its attributes for dark mode hooks
-          if (targetTag === 'html' || targetTag === 'body') {
-            const val = m.target.getAttribute(m.attributeName) || '';
-            if (attrName.includes('dark') || val.toLowerCase().includes('dark')) {
-              triggerLockdown(`Root <${targetTag}> modified with dark-theme attribute (${attrName}="${val}").`);
-              return;
-            }
-          }
-        }
-
-        // Check added nodes anywhere in <head>, <html>, or <body>
-        if (m.type === 'childList') {
-          for (const node of m.addedNodes) {
-            if (node.nodeType !== 1) continue; // Element nodes only
-            if (trustedNodes.has(node)) continue;
-
-            const tag = node.tagName.toLowerCase();
-            const cls = (node.className || '').toString().toLowerCase();
-            const id = (node.id || '').toLowerCase();
-
-            // Catch <style class="darkreader"> or injected <link>/<script>/<div> in <head> or <body>
-            if (tag === 'style' || tag === 'link' || tag === 'script' || cls.includes('darkreader') || id.includes('darkreader')) {
-              triggerLockdown(`Untrusted <${tag}> node (class="${cls || 'none'}") injected into <${m.target.tagName.toLowerCase()}>.`);
-              return;
-            }
-
-            triggerLockdown(`Untrusted DOM element <${tag} id="${id}" class="${cls}"> injected outside WeakSet registry.`);
-            return;
-          }
-        }
-      }
-    });
-
-    // ============================================================================
-    // LAYER 3B: COMPUTED STYLE CANARY & PRE-LOAD EXTENSION AUDIT
-    // (Catches extensions that ran at document_start BEFORE JS booted, or use CSS Filters)
-    // ============================================================================
-    function runFullIntegrityAudit(isManual = false) {
-      if (isManual) logEvent('INFO', 'Running full DOM, <head>, and Computed CSS integrity audit...');
-
-      // 1. Scan <html> and <body> attributes for already-injected extension signatures
-      for (const rootEl of [document.documentElement, document.body]) {
-        for (const attr of Array.from(rootEl.attributes)) {
-          const name = attr.name.toLowerCase();
-          const val = (attr.value || '').toLowerCase();
-          if (name.includes('darkreader') || name.includes('nighteye') || val.includes('darkreader') || val.includes('darkmode')) {
-            triggerLockdown(`Pre-loaded extension signature detected on <${rootEl.tagName.toLowerCase()}>: ${attr.name}="${attr.value}"`);
-            return;
-          }
-        }
-      }
-
-      // 2. Scan <head> for unauthorized <style> or <link> tags (e.g., Dark Reader's <style class="darkreader">)
-      const headStyles = document.head.querySelectorAll('style.darkreader, style[id*="dark"], link[href*="chrome-extension://"], link[href*="moz-extension://"]');
-      if (headStyles.length > 0) {
-        triggerLockdown(`Extension stylesheet detected inside <head> (${headStyles[0].tagName} .${headStyles[0].className})`);
-        return;
-      }
-
-      // 3. Check Computed CSS Color Canary (Detects CSS filter: invert() or forced dark background)
-      if (document.getElementById('toggle-css-canary').checked) {
-        const canary = document.getElementById('css-integrity-canary');
-        if (canary) {
-          const computed = window.getComputedStyle(canary);
-          const bg = computed.backgroundColor;
-          const filter = computed.filter || window.getComputedStyle(document.documentElement).filter;
-          const readout = document.getElementById('canary-rgb-readout');
-          if (readout) readout.textContent = `Canary RGB: ${bg} | Filter: ${filter}`;
-
-          // Expected exact background is rgb(254, 254, 254)
-          if (bg !== 'rgb(254, 254, 254)' && bg !== 'rgba(254, 254, 254, 1)') {
-            triggerLockdown(`CSS Color Canary altered! Expected rgb(254, 254, 254) but browser rendered ${bg} (Dark Theme extension active).`);
-            return;
-          }
-          if (filter && filter !== 'none') {
-            triggerLockdown(`Root CSS Filter manipulation detected (filter: ${filter}).`);
-            return;
-          }
-        }
-      }
-
-      updateInspectorReadout();
-      if (isManual) logEvent('INFO', 'Integrity audit passed: No unauthorized <head> styles or CSS mutations found.');
-    }
-
-    // ============================================================================
-    // INSPECT MODE & DEVTOOLS DETERRENT / DETECTION
-    // ============================================================================
-    // 1. Block Right-Click Context Menu
-    window.addEventListener('contextmenu', (e) => {
-      if (!document.getElementById('toggle-inspect-block').checked) return;
-      e.preventDefault();
-      logEvent('WARN', 'Blocked Right-Click context menu (Inspect Element deterrent).');
-    });
-
-    // 2. Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U
-    window.addEventListener('keydown', (e) => {
-      if (!document.getElementById('toggle-inspect-block').checked) return;
-      const key = e.key.toUpperCase();
-      const isF12 = e.key === 'F12';
-      const isDevCombo = (e.ctrlKey || e.metaKey) && e.shiftKey && ['I', 'J', 'C'].includes(key);
-      const isViewSource = (e.ctrlKey || e.metaKey) && key === 'U';
-
-      if (isF12 || isDevCombo || isViewSource) {
-        e.preventDefault();
-        e.stopPropagation();
-        triggerLockdown(`Blocked DevTools keyboard shortcut (${isF12 ? 'F12' : 'Ctrl/Cmd+Shift+' + key}).`);
-      }
-    });
-
-    // 3. Detect Docked DevTools via Outer/Inner Window Viewport Differential
-    let baselineDiffW = Math.abs(window.outerWidth - window.innerWidth);
-    let baselineDiffH = Math.abs(window.outerHeight - window.innerHeight);
-
-    window.addEventListener('resize', () => {
-      if (!document.getElementById('toggle-devtools-lock').checked) return;
-      const diffW = Math.abs(window.outerWidth - window.innerWidth);
-      const diffH = Math.abs(window.outerHeight - window.innerHeight);
-
-      // If docked DevTools suddenly consumes > 160px of viewport width or height compared to baseline
-      if ((diffW - baselineDiffW > 160) || (diffH - baselineDiffH > 160)) {
-        triggerLockdown(`Docked Browser Developer Tools detected via viewport differential (${diffW}px / ${diffH}px).`);
-      }
-    });
-
-    // ============================================================================
-    // SIMULATOR HELPERS FOR TESTING
-    // ============================================================================
     function simulateDarkThemeExtension() {
-      logEvent('WARN', 'Simulating real Dark Reader / Dark Theme extension behavior...');
+      logEvent('WARN', 'Simulating Dark Reader extension injecting <head> style & root attribute...');
       const style = document.createElement('style');
-      style.className = 'darkreader darkreader--sync simulated-ext-node';
-      style.textContent = '#css-integrity-canary { background-color: rgb(24, 26, 27) !important; }';
+      style.className = 'darkreader simulated-ext-node';
+      style.textContent = '#css-integrity-canary { background-color: rgb(20, 20, 20) !important; }';
       document.head.appendChild(style);
       document.documentElement.setAttribute('data-darkreader-mode', 'dynamic');
     }
 
-    function simulateHoneypotScrape() {
-      logEvent('WARN', 'Simulating scraper enumerating hidden honeypot node & querying /api/student/999999...');
-      const hp = document.getElementById('hp-node');
-      if (hp) {
-        hp.setAttribute('data-scraped', 'true');
-      }
-      triggerLockdown('Honeypot Canary Node (#hp-node) & Decoy API Record #999999 accessed by automated script.');
+    function simulateFetchHookAttack() {
+      logEvent('WARN', 'Simulating malicious extension monkey-patching window.fetch...');
+      window.fetch = function (...args) {
+        return ORIGINAL_FETCH.apply(this, args);
+      };
+      runSecurityAudit();
     }
 
     // ============================================================================
-    // INITIALIZATION
+    // 8. FULL-DOCUMENT MUTATION OBSERVER & SHORTCUT BLOCKERS
+    // ============================================================================
+    const observer = new MutationObserver((mutations) => {
+      if (!document.getElementById('toggle-dom-canary').checked) return;
+      for (const m of mutations) {
+        if (m.type === 'attributes') {
+          const attr = (m.attributeName || '').toLowerCase();
+          if (attr.includes('darkreader') || attr.includes('nighteye')) {
+            triggerLockdown(`Real-time attribute tampering (${attr}) on <${m.target.tagName.toLowerCase()}>.`);
+            return;
+          }
+        }
+        if (m.type === 'childList') {
+          for (const node of m.addedNodes) {
+            if (node.nodeType !== 1 || trustedNodes.has(node)) continue;
+            triggerLockdown(`Untrusted DOM node <${node.tagName.toLowerCase()}> injected outside WeakSet.`);
+            return;
+          }
+        }
+      }
+    });
+
+    window.addEventListener('contextmenu', (e) => {
+      if (!document.getElementById('toggle-shortcuts').checked) return;
+      e.preventDefault();
+      logEvent('WARN', 'Blocked Right-Click context menu.');
+    });
+
+    window.addEventListener('copy', (e) => {
+      if (!document.getElementById('toggle-shortcuts').checked) return;
+      e.preventDefault();
+      logEvent('WARN', 'Blocked clipboard copy attempt.');
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (!document.getElementById('toggle-shortcuts').checked) return;
+      const key = e.key.toUpperCase();
+      const isF12 = e.key === 'F12';
+      const isCombo = (e.ctrlKey || e.metaKey) && e.shiftKey && ['I', 'J', 'C', 'K'].includes(key);
+      const isSource = (e.ctrlKey || e.metaKey) && key === 'U';
+      if (isF12 || isCombo || isSource) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerLockdown(`Blocked DevTools keyboard shortcut (${isF12 ? 'F12' : 'Ctrl+Shift+' + key}).`);
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (!isLockedDown) detectPreOpenedOrActiveDevTools();
+    });
+
+    // ============================================================================
+    // 9. ZERO-TRUST BOOT SEQUENCE (Check FIRST, Render SECOND!)
     // ============================================================================
     window.addEventListener('DOMContentLoaded', () => {
       registerSubtree(document.documentElement);
-      renderProtectedData();
 
-      // Observe the ENTIRE document (<html>, <head>, and <body>) — not just a single div!
+      // Step 1: Run pre-flight security check BEFORE mounting any student data!
+      const threatFoundAtBoot = runSecurityAudit();
+
+      if (!threatFoundAtBoot) {
+        // Step 2: Only mount sensitive Canvas cards if Inspect Mode & Dark Themes are OFF
+        renderProtectedData();
+        document.getElementById('session-badge').textContent = `Session: #${randomHash(4).toUpperCase()}-VERIFIED`;
+        logEvent('INFO', 'Pre-boot security gate PASSED. Sensitive records rendered to Canvas.');
+      } else {
+        logEvent('CRITICAL', 'Pre-boot gate FAILED! Sensitive records were never mounted to the DOM.');
+      }
+
+      // Step 3: Arm Full-Document MutationObserver
       observer.observe(document.documentElement, {
         childList: true,
         subtree: true,
         attributes: true
       });
 
-      logEvent('INFO', 'WeakSet registered. Full-Document MutationObserver watching <html>, <head>, and <body>.');
-
-      // Poll every 1.5s to catch extensions that injected before page load or use browser-level CSS filters
+      // Step 4: Continuous background heartbeat check every 1000ms
       setInterval(() => {
-        if (!isLockedDown) runFullIntegrityAudit(false);
-      }, 1500);
+        if (!isLockedDown) runSecurityAudit();
+      }, 1000);
     });
   </script>
 </body>
