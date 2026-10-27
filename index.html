@@ -1,1381 +1,535 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Layered Protection Against Malicious Browser Extensions — Live Demo</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter & JetBrains Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    colors: {
-                        cyber: {
-                            950: '#070b14',
-                            900: '#0f172a',
-                            800: '#1e293b',
-                            700: '#334155',
-                            accent: '#38bdf8',
-                            success: '#10b981',
-                            warning: '#f59e0b',
-                            danger: '#ef4444'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Custom Scrollbars */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.4);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(100, 116, 139, 0.5);
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(148, 163, 184, 0.8);
-        }
-
-        /* Subtle pulse animation for active sensors */
-        @keyframes pulse-ring {
-            0% { transform: scale(0.8); opacity: 0.8; }
-            80%, 100% { transform: scale(2.2); opacity: 0; }
-        }
-        .sensor-pulse::before {
-            content: '';
-            position: absolute;
-            inset: -2px;
-            border-radius: 9999px;
-            background-color: currentColor;
-            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-        }
-
-        /* Off-screen Honeypot Styling (Looks like normal obfuscated layout in DOM) */
-        .sr-decoy-trap {
-            position: absolute !important;
-            left: -9999px !important;
-            top: -9999px !important;
-            opacity: 0.001 !important;
-            pointer-events: none !important;
-            height: 1px !important;
-            width: 1px !important;
-            overflow: hidden !important;
-        }
-
-        /* Flash highlight when selectors regenerate */
-        @keyframes hash-flash {
-            0% { background-color: rgba(56, 189, 248, 0.28); }
-            100% { background-color: transparent; }
-        }
-        .animate-hash {
-            animation: hash-flash 0.9s ease-out;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>University Portal — Live Extension & DevTools Defense</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style id="core-trusted-styles">
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    /* CSS Color Canary: Must remain exact rgb(254, 254, 254) unless tampered with by a Dark Theme extension */
+    #css-integrity-canary {
+      background-color: rgb(254, 254, 254);
+      color: rgb(17, 24, 39);
+      position: fixed;
+      bottom: -9999px;
+      left: -9999px;
+      width: 1px;
+      height: 1px;
+      pointer-events: none;
+    }
+  </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans h-full flex flex-col lg:flex-row overflow-hidden select-none">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col lg:flex-row overflow-x-hidden">
 
-    <!-- ===================================================================== -->
-    <!-- LEFT PANEL: EXTENSION & SECURITY SIMULATOR CONTROL PANEL              -->
-    <!-- ===================================================================== -->
-    <aside class="w-full lg:w-[460px] xl:w-[500px] bg-cyber-950 text-slate-200 flex flex-col h-[48vh] lg:h-full border-b lg:border-b-0 lg:border-r border-slate-800 shrink-0 z-30 shadow-2xl">
-        
-        <!-- Top Header -->
-        <div class="px-5 py-4 bg-cyber-900 border-b border-slate-800 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 shadow-inner">
-                    <i class="fa-solid fa-shield-halved text-lg"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h1 class="font-bold text-sm tracking-wide text-white uppercase">Defense-in-Depth Lab</h1>
-                        <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">v2.4</span>
-                    </div>
-                    <p class="text-xs text-slate-400">Browser Extension Threat & Mitigation Simulator</p>
-                </div>
-            </div>
-            <button id="btn-architecture-modal" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1.5" title="View Architecture Summary">
-                <i class="fa-solid fa-circle-info text-sky-400"></i>
-                <span class="hidden sm:inline">4-Layer Spec</span>
-            </button>
-        </div>
+  <!-- HIDDEN CSS INTEGRITY CANARY (Detects Dark Reader / Browser-level CSS Filters) -->
+  <div id="css-integrity-canary" aria-hidden="true"></div>
 
-        <!-- Scrollable Simulator Controls -->
-        <div class="flex-1 overflow-y-auto p-4 space-y-4">
-
-            <!-- Telemetry Metrics Bar -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div class="bg-cyber-900/90 border border-slate-800/90 rounded-lg p-2.5">
-                    <div class="text-[10px] font-mono uppercase text-slate-400">Session Seed</div>
-                    <div id="metric-seed" class="font-mono text-xs font-semibold text-sky-400 mt-0.5 truncate">#8F92A1</div>
-                </div>
-                <div class="bg-cyber-900/90 border border-slate-800/90 rounded-lg p-2.5">
-                    <div class="text-[10px] font-mono uppercase text-slate-400">WeakSet Nodes</div>
-                    <div class="flex items-baseline gap-1 mt-0.5">
-                        <span id="metric-weakset" class="font-mono text-xs font-semibold text-emerald-400">0</span>
-                        <span class="text-[10px] text-slate-500">verified</span>
-                    </div>
-                </div>
-                <div class="bg-cyber-900/90 border border-slate-800/90 rounded-lg p-2.5">
-                    <div class="text-[10px] font-mono uppercase text-slate-400">DOM Tripwire</div>
-                    <div id="metric-observer" class="flex items-center gap-1.5 mt-0.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 relative sensor-pulse"></span>
-                        <span class="font-mono text-xs font-semibold text-emerald-400">ARMED</span>
-                    </div>
-                </div>
-                <div class="bg-cyber-900/90 border border-slate-800/90 rounded-lg p-2.5">
-                    <div class="text-[10px] font-mono uppercase text-slate-400">Decoy Status</div>
-                    <div id="metric-honeypot" class="font-mono text-xs font-semibold text-amber-400 mt-0.5">2 ARMED</div>
-                </div>
-            </div>
-
-            <!-- Layer 3/4 Control: Protection Mode Switch -->
-            <div class="bg-cyber-900 border border-slate-800 rounded-xl p-3.5">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                        <i class="fa-solid fa-sliders text-sky-400"></i>
-                        Layer 3 & 4 Response Policy
-                    </span>
-                    <span id="mode-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold">
-                        ACTIVE LOCKDOWN
-                    </span>
-                </div>
-                <div class="grid grid-cols-2 gap-1.5 bg-cyber-950 p-1 rounded-lg border border-slate-800">
-                    <button id="btn-mode-lockdown" class="text-xs py-1.5 px-2.5 rounded-md font-medium transition flex items-center justify-center gap-1.5 bg-rose-600 text-white shadow">
-                        <i class="fa-solid fa-lock"></i>
-                        Active Lockdown
-                    </button>
-                    <button id="btn-mode-log" class="text-xs py-1.5 px-2.5 rounded-md font-medium transition flex items-center justify-center gap-1.5 text-slate-400 hover:text-white">
-                        <i class="fa-solid fa-clipboard-list"></i>
-                        Log-Only (Tuning)
-                    </button>
-                </div>
-                <p id="mode-helper-text" class="text-[11px] text-slate-400 mt-2 leading-relaxed">
-                    <strong class="text-slate-200">Active Lockdown Mode:</strong> Any unauthorized DOM injection or honeypot access immediately scrubs sensitive data from the DOM and invalidates the session.
-                </p>
-            </div>
-
-            <!-- Simulator Action Deck: Malicious & Benign Extensions -->
-            <div class="bg-cyber-900 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                        <i class="fa-solid fa-bug text-rose-400"></i>
-                        Extension Behavior Simulator
-                    </h2>
-                    <span class="text-[10px] text-slate-400 font-mono">Click to test layers</span>
-                </div>
-
-                <!-- Attack 1: Layer 1 Test -->
-                <button id="btn-attack-1" class="w-full text-left p-2.5 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/80 hover:border-sky-500/50 transition group">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-semibold text-sky-300 group-hover:text-sky-200 flex items-center gap-2">
-                            <span class="w-5 h-5 rounded bg-sky-500/20 text-sky-400 flex items-center justify-center font-mono text-[11px]">1</span>
-                            Run Legacy DOM Scraper
-                        </span>
-                        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-sky-400 border border-slate-700">Tests Layer 1</span>
-                    </div>
-                    <p class="text-[11px] text-slate-400 mt-1 pl-7">
-                        Queries hardcoded selectors (<code class="text-slate-300">.student-name</code>, <code class="text-slate-300">#cgpa-box</code>). Fails silently due to per-session selector randomization.
-                    </p>
-                </button>
-
-                <!-- Attack 2: Layer 3 & 4 Test (DOM Injection) -->
-                <button id="btn-attack-2" class="w-full text-left p-2.5 rounded-lg bg-slate-800/70 hover:bg-rose-950/40 border border-slate-700/80 hover:border-rose-500/60 transition group">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-semibold text-rose-300 group-hover:text-rose-200 flex items-center gap-2">
-                            <span class="w-5 h-5 rounded bg-rose-500/20 text-rose-400 flex items-center justify-center font-mono text-[11px]">2</span>
-                            Inject "Custom Dark Theme" Extension Node
-                        </span>
-                        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-rose-400 border border-slate-700">Tests Layer 3 & 4</span>
-                    </div>
-                    <p class="text-[11px] text-slate-400 mt-1 pl-7">
-                        Injects an unverified UI banner into the portal DOM. Detected immediately because the node is missing from the portal's private <code class="text-slate-300">WeakSet</code>.
-                    </p>
-                </button>
-
-                <!-- Attack 3: Layer 2 & 4 Test (Honeypot + API Decoy) -->
-                <button id="btn-attack-3" class="w-full text-left p-2.5 rounded-lg bg-slate-800/70 hover:bg-amber-950/40 border border-slate-700/80 hover:border-amber-500/60 transition group">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-semibold text-amber-300 group-hover:text-amber-200 flex items-center gap-2">
-                            <span class="w-5 h-5 rounded bg-amber-500/20 text-amber-400 flex items-center justify-center font-mono text-[11px]">3</span>
-                            Aggressive Scraper (Touch Honeypot & API #999999)
-                        </span>
-                        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-amber-400 border border-slate-700">Tests Layer 2 & 4</span>
-                    </div>
-                    <p class="text-[11px] text-slate-400 mt-1 pl-7">
-                        Bypasses class names by harvesting all DOM containers (touching the hidden decoy trap) and fetching decoy API record <code class="text-slate-300">ID 999999</code>.
-                    </p>
-                </button>
-
-                <!-- Benign Test 4: False Positive / Whitelist Demo -->
-                <button id="btn-attack-4" class="w-full text-left p-2.5 rounded-lg bg-slate-800/70 hover:bg-emerald-950/30 border border-slate-700/80 hover:border-emerald-500/50 transition group">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-semibold text-emerald-300 group-hover:text-emerald-200 flex items-center gap-2">
-                            <span class="w-5 h-5 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono text-[11px]">4</span>
-                            Simulate Benign Extension (Grammarly / Helper)
-                        </span>
-                        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-emerald-400 border border-slate-700">Tuning Demo</span>
-                    </div>
-                    <p class="text-[11px] text-slate-400 mt-1 pl-7">
-                        Injects <code class="text-slate-300">&lt;grammarly-extension&gt;</code>. Demonstrates why deployments start in <strong>Log-Only Mode</strong> or use signature filtering.
-                    </p>
-                </button>
-
-                <!-- Whitelist checkbox for Benign Extensions -->
-                <div class="pt-1 flex items-center justify-between px-1">
-                    <label for="chk-whitelist-benign" class="text-[11px] text-slate-300 flex items-center gap-2 cursor-pointer">
-                        <input id="chk-whitelist-benign" type="checkbox" class="rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-0">
-                        <span>Ignore known benign signatures (<code class="text-sky-300">grammarly-extension</code>)</span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Live Security Event & Telemetry Log -->
-            <div class="bg-cyber-900 border border-slate-800 rounded-xl flex flex-col overflow-hidden">
-                <div class="px-3.5 py-2.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-terminal text-xs text-sky-400"></i>
-                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-300">Security Telemetry & Event Log</span>
-                    </div>
-                    <button id="btn-clear-log" class="text-[10px] font-mono text-slate-400 hover:text-slate-200">Clear</button>
-                </div>
-                <div id="telemetry-log" class="p-3 font-mono text-[11px] space-y-2 max-h-56 overflow-y-auto bg-cyber-950/80">
-                    <!-- Populated dynamically via JS -->
-                </div>
-            </div>
-
-        </div>
-
-        <!-- Bottom Quick Actions -->
-        <div class="p-3 bg-cyber-900 border-t border-slate-800 flex items-center justify-between gap-2">
-            <button id="btn-rerandomize" class="flex-1 py-2 px-3 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 text-xs font-medium transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-shuffle"></i>
-                <span>Re-Randomize Selectors (New Session)</span>
-            </button>
-            <button id="btn-reset-demo" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition flex items-center gap-1.5" title="Full Reset">
-                <i class="fa-solid fa-rotate-right"></i>
-                <span>Reset</span>
-            </button>
-        </div>
-    </aside>
-
-    <!-- ===================================================================== -->
-    <!-- RIGHT PANEL: PROTECTED UNIVERSITY STUDENT PORTAL                      -->
-    <!-- ===================================================================== -->
-    <main class="flex-1 flex flex-col h-[52vh] lg:h-full overflow-hidden relative bg-slate-100">
-        
-        <!-- Simulated Browser Address Bar & Extension Toolbar -->
-        <header class="bg-slate-200/90 border-b border-slate-300 px-4 py-2 flex items-center justify-between gap-3 shrink-0">
-            <div class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full bg-rose-400 inline-block"></span>
-                <span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>
-                <span class="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span>
-            </div>
-
-            <!-- URL Bar -->
-            <div class="flex-1 max-w-xl bg-white border border-slate-300 rounded-lg px-3 py-1 flex items-center justify-between text-xs shadow-sm">
-                <div class="flex items-center gap-2 truncate">
-                    <i class="fa-solid fa-lock text-emerald-600 text-[11px]"></i>
-                    <span class="text-slate-400 hidden sm:inline">https://</span>
-                    <span class="font-medium text-slate-700 truncate">portal. metropolitan-uni.edu/student/academic-records</span>
-                </div>
-                <span id="url-session-badge" class="text-[10px] font-mono bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
-                    SESSION: VALID
-                </span>
-            </div>
-
-            <!-- Simulated Installed Browser Extensions Icons -->
-            <div class="flex items-center gap-2">
-                <div class="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs shadow-sm">
-                    <i class="fa-solid fa-puzzle-piece text-slate-500"></i>
-                    <span class="text-[11px] font-medium text-slate-600 hidden md:inline">Extensions Sandbox</span>
-                    <span class="w-2 h-2 rounded-full bg-amber-500" title="3rd-Party Extensions Active in Browser"></span>
-                </div>
-            </div>
-        </header>
-
-        <!-- Main Portal Scrollable Area -->
-        <div class="flex-1 overflow-y-auto relative" id="portal-scroll-viewport">
-
-            <!-- University Navigation Bar -->
-            <nav class="bg-slate-900 text-white px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-base shadow">
-                        <i class="fa-solid fa-graduation-cap"></i>
-                    </div>
-                    <div>
-                        <div class="font-bold text-sm tracking-tight">METROPOLITAN UNIVERSITY</div>
-                        <div class="text-[11px] text-slate-400">Unified Student Academic & Financial Portal</div>
-                    </div>
-                </div>
-
-                <!-- Security Layer Status Pills -->
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-[11px] bg-slate-800 border border-slate-700 text-sky-300 px-2.5 py-1 rounded-full flex items-center gap-1.5 font-mono">
-                        <i class="fa-solid fa-fingerprint text-[10px]"></i>
-                        L1: Obfuscated DOM
-                    </span>
-                    <span class="text-[11px] bg-slate-800 border border-slate-700 text-amber-300 px-2.5 py-1 rounded-full flex items-center gap-1.5 font-mono">
-                        <i class="fa-solid fa-spider text-[10px]"></i>
-                        L2: Honeypot Armed
-                    </span>
-                    <span class="text-[11px] bg-slate-800 border border-slate-700 text-emerald-300 px-2.5 py-1 rounded-full flex items-center gap-1.5 font-mono">
-                        <i class="fa-solid fa-eye text-[10px]"></i>
-                        L3: WeakSet Observer
-                    </span>
-                </div>
-            </nav>
-
-            <!-- PROTECTED PORTAL ROOT CONTAINER (Monitored by Layer 3 MutationObserver) -->
-            <div id="portal-protected-root" class="max-w-6xl mx-auto p-5 space-y-6">
-                <!-- Dynamic Obfuscated Student Data Cards & Tables are rendered here by renderProtectedPortal() -->
-            </div>
-
-            <!-- =============================================================== -->
-            <!-- INTERACTIVE INSPECTOR TABS (Layer 1 Mapping & Layer 2 API Trap) -->
-            <!-- =============================================================== -->
-            <section class="max-w-6xl mx-auto px-5 pb-10">
-                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="bg-slate-900 text-slate-200 px-5 py-3 flex flex-wrap items-center justify-between gap-2">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-code-compare text-sky-400"></i>
-                            <h3 class="text-xs font-bold uppercase tracking-wider">Under-The-Hood Defense Inspector (Live View)</h3>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <button id="tab-btn-dom" class="text-xs px-3 py-1 rounded-md font-medium bg-sky-500 text-white transition">
-                                Layer 1: Live Obfuscated DOM & Mapping
-                            </button>
-                            <button id="tab-btn-api" class="text-xs px-3 py-1 rounded-md font-medium text-slate-300 hover:bg-slate-800 transition">
-                                Layer 2: Honeypot & Decoy API Monitor
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Tab 1: Layer 1 Server Secret Mapping vs Live DOM -->
-                    <div id="tab-panel-dom" class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5 bg-slate-50">
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-bold uppercase text-slate-600 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-key text-amber-600"></i>
-                                    Server-Only Secret Selector Mapping
-                                </span>
-                                <span class="text-[11px] font-mono text-slate-500">Rotates every login/build</span>
-                            </div>
-                            <div class="bg-slate-900 text-slate-200 rounded-lg p-3 font-mono text-xs overflow-x-auto border border-slate-800">
-                                <table class="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr class="border-b border-slate-800 text-slate-400 text-[11px]">
-                                            <th class="pb-2">Semantic Target</th>
-                                            <th class="pb-2">Legacy Selector (Broken)</th>
-                                            <th class="pb-2 text-sky-400">Live Ephemeral Hash</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="inspector-mapping-tbody" class="divide-y divide-slate-800/70 text-[11px]">
-                                        <!-- Populated dynamically -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs font-bold uppercase text-slate-600 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-code text-sky-600"></i>
-                                    Live Rendered HTML Snapshot (What Extensions See)
-                                </span>
-                                <span id="dom-snapshot-status" class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
-                                    DATA PRESENT (OBFUSCATED)
-                                </span>
-                            </div>
-                            <pre id="inspector-live-html" class="bg-slate-900 text-emerald-300 rounded-lg p-3.5 font-mono text-[11px] leading-relaxed overflow-x-auto border border-slate-800 max-h-56"></pre>
-                        </div>
-                    </div>
-
-                    <!-- Tab 2: Layer 2 Decoy API & DOM Honeypot Monitor -->
-                    <div id="tab-panel-api" class="p-5 hidden bg-slate-50 space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="bg-white p-4 rounded-lg border border-slate-200">
-                                <div class="flex items-center justify-between">
-                                    <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-                                        <i class="fa-solid fa-eye-slash text-amber-500"></i>
-                                        DOM Honeypot Node (Canary Container)
-                                    </h4>
-                                    <span id="honeypot-dom-badge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">
-                                        UNTOUCHED
-                                    </span>
-                                </div>
-                                <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
-                                    Inserted alongside real student cards with an identical obfuscated class structure, positioned off-screen. Any extension that reads, modifies, or removes it trips Layer 3/4.
-                                </p>
-                                <div id="honeypot-dom-preview" class="mt-2.5 p-2.5 rounded bg-slate-900 text-amber-300 font-mono text-[11px] overflow-x-auto"></div>
-                            </div>
-
-                            <div class="bg-white p-4 rounded-lg border border-slate-200">
-                                <div class="flex items-center justify-between">
-                                    <h4 class="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-                                        <i class="fa-solid fa-database text-indigo-500"></i>
-                                        Server API Canary Record (#999999)
-                                    </h4>
-                                    <button id="btn-manual-decoy-api" class="text-[11px] bg-amber-500 hover:bg-amber-600 text-white font-medium px-2.5 py-1 rounded transition">
-                                        Test Request ID #999999
-                                    </button>
-                                </div>
-                                <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
-                                    Fake student record embedded in API responses that the legitimate UI never renders or queries. Any request for <code class="font-mono text-rose-600">/api/v1/student/999999/transcript</code> flags automated harvesting.
-                                </p>
-                                <div class="mt-2.5 overflow-x-auto">
-                                    <table class="w-full text-left font-mono text-[11px]">
-                                        <thead>
-                                            <tr class="border-b border-slate-200 text-slate-500">
-                                                <th class="pb-1">Time</th>
-                                                <th class="pb-1">Endpoint</th>
-                                                <th class="pb-1">Origin</th>
-                                                <th class="pb-1">Verdict</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="api-monitor-tbody" class="divide-y divide-slate-100">
-                                            <!-- Populated dynamically -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- =============================================================== -->
-            <!-- LAYER 4: AUTOMATIC FULL-SCREEN LOCKDOWN OVERLAY                 -->
-            <!-- =============================================================== -->
-            <div id="lockdown-overlay" class="hidden fixed lg:absolute inset-0 bg-slate-950/95 backdrop-blur-md z-40 flex items-center justify-center p-4 overflow-y-auto">
-                <div class="max-w-lg w-full bg-slate-900 border-2 border-rose-500/80 rounded-2xl shadow-2xl overflow-hidden text-slate-100 my-auto">
-                    
-                    <!-- Red Siren Banner -->
-                    <div class="bg-rose-600 px-6 py-4 flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center text-white text-xl">
-                                <i class="fa-solid fa-triangle-exclamation"></i>
-                            </div>
-                            <div>
-                                <h2 class="font-bold text-base tracking-wide uppercase text-white">Security Lockdown Activated</h2>
-                                <p class="text-xs text-rose-100 font-mono">LAYER 4 AUTOMATIC RESPONSE • SESSION TERMINATED</p>
-                            </div>
-                        </div>
-                        <span class="text-xs font-mono bg-rose-900/70 px-2.5 py-1 rounded border border-rose-300/30 text-rose-100">HTTP 403</span>
-                    </div>
-
-                    <div class="p-6 space-y-5">
-                        <!-- Official Warning Message from Proposal -->
-                        <div class="bg-rose-950/50 border border-rose-500/40 rounded-xl p-4 text-sm text-rose-100 leading-relaxed">
-                            <p class="font-semibold text-white mb-1">
-                                “A suspicious extension was detected. Your session has been locked to protect your data. Please disable unknown extensions and reload.”
-                            </p>
-                            <p class="text-xs text-rose-200/80 mt-2">
-                                Trigger Reason: <span id="lockdown-reason" class="font-mono underline">Unauthorized DOM node injection detected by MutationObserver</span>
-                            </p>
-                        </div>
-
-                        <!-- Verification Checklist of Layer 4 Actions -->
-                        <div class="space-y-2 text-xs">
-                            <div class="text-[11px] font-mono uppercase text-slate-400">Automated Mitigation Actions Executed:</div>
-                            <div class="flex items-center gap-2.5 bg-slate-800/70 p-2.5 rounded-lg border border-slate-700">
-                                <i class="fa-solid fa-circle-check text-emerald-400"></i>
-                                <span><strong>1. Sensitive DOM Scrubbed:</strong> Academic & financial nodes permanently destroyed from memory (verify in DOM Inspector below).</span>
-                            </div>
-                            <div class="flex items-center gap-2.5 bg-slate-800/70 p-2.5 rounded-lg border border-slate-700">
-                                <i class="fa-solid fa-circle-check text-emerald-400"></i>
-                                <span><strong>2. Server Session Invalidated:</strong> JWT token revoked & incident telemetry reported to University SOC.</span>
-                            </div>
-                            <div class="flex items-center gap-2.5 bg-slate-800/70 p-2.5 rounded-lg border border-slate-700">
-                                <i class="fa-solid fa-circle-check text-emerald-400"></i>
-                                <span><strong>3. Step-Up MFA Required:</strong> Re-authentication with 2FA One-Time Password (OTP) enforced.</span>
-                            </div>
-                        </div>
-
-                        <!-- Simulated OTP Re-login Flow -->
-                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <label class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-mobile-screen-button text-sky-400"></i>
-                                    Verify Identity with Student OTP to Restore Session
-                                </label>
-                                <span class="text-[11px] font-mono text-sky-400">Demo OTP: 482910</span>
-                            </div>
-                            <div class="flex gap-2">
-                                <input id="otp-input" type="text" value="482910" maxlength="6" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono text-sm text-center tracking-widest text-white focus:outline-none focus:border-sky-500" placeholder="Enter 6-digit OTP">
-                                <button id="btn-unlock-otp" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-2 rounded-lg transition flex items-center gap-2 shadow-lg">
-                                    <i class="fa-solid fa-key"></i>
-                                    <span>Verify OTP & Issue New Session</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-between items-center pt-1 text-[11px] text-slate-400">
-                            <span>Want to inspect the wiped HTML behind this modal?</span>
-                            <button id="btn-peek-dom" class="text-sky-400 hover:text-sky-300 underline font-mono">
-                                Minimize Modal to Inspect Scrubbed DOM
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </main>
-
-    <!-- ===================================================================== -->
-    <!-- ARCHITECTURE OVERVIEW MODAL (4-LAYER PROPOSAL SUMMARY)                -->
-    <!-- ===================================================================== -->
-    <div id="architecture-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="max-w-2xl w-full bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden text-slate-200">
-            <div class="px-6 py-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                    <i class="fa-solid fa-layer-group text-sky-400"></i>
-                    <h3 class="font-bold text-sm uppercase tracking-wider">Proposal Architecture: 4 Layers + Companion Controls</h3>
-                </div>
-                <button id="btn-close-architecture" class="text-slate-400 hover:text-white text-sm px-2 py-1">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <div class="p-6 space-y-4 text-xs leading-relaxed max-h-[75vh] overflow-y-auto">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div class="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700">
-                        <div class="font-bold text-sky-400 mb-1">1. Randomized (Obfuscated) Selectors</div>
-                        <p class="text-slate-300">Every ID and class name is generated per session or deployment (e.g., <code class="text-white">#cgpa-box</code> → <code class="text-sky-300">#x7k2q9</code>). Hardcoded extension scrapers find nothing.</p>
-                    </div>
-                    <div class="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700">
-                        <div class="font-bold text-amber-400 mb-1">2. Honeypots & Decoy API Records</div>
-                        <p class="text-slate-300">Hidden off-screen DOM containers and fake student API records (<code class="text-amber-300">ID 999999</code>) that normal users never touch. Any access proves automated scraping.</p>
-                    </div>
-                    <div class="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700">
-                        <div class="font-bold text-emerald-400 mb-1">3. Tripwire Monitoring (WeakSet)</div>
-                        <p class="text-slate-300">Legitimate DOM nodes are stored in an in-memory <code class="text-emerald-300">WeakSet</code> rather than visible HTML attributes. A <code class="text-emerald-300">MutationObserver</code> catches any unverified node or tampered decoy.</p>
-                    </div>
-                    <div class="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700">
-                        <div class="font-bold text-rose-400 mb-1">4. Automatic Lockdown Response</div>
-                        <p class="text-slate-300">Immediately removes sensitive nodes from the DOM, displays a full-screen warning, invalidates the server session, and requires OTP re-login.</p>
-                    </div>
-                </div>
-                <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                    <div class="font-bold text-slate-200 uppercase text-[11px]">Honest Limitations & Essential Companion Measures</div>
-                    <p class="text-slate-400">
-                        Because extensions run inside the user's browser, front-end defenses raise the cost of attack while server-side controls close the loop: <strong>OTP / 2FA login</strong>, <strong>rate-limiting & anomaly detection</strong>, <strong>short-lived device-bound tokens</strong>, <strong>minimal data exposure per page</strong>, and <strong>official Chrome/Edge Web Store takedown reports</strong>.
-                    </p>
-                </div>
-            </div>
-        </div>
+  <!-- LEFT PANEL: LIVE SECURITY CONTROL & TELEMETRY -->
+  <aside class="w-full lg:w-96 bg-slate-900 border-r border-slate-800 p-5 flex flex-col gap-4 shrink-0 z-20">
+    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+      <div>
+        <span class="text-xs uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold">Vercel Live Ready</span>
+        <h1 class="text-lg font-bold mt-1 text-white">Defense Control Center</h1>
+      </div>
+      <div id="shield-status" class="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" title="Shield Active"></div>
     </div>
 
-    <!-- ===================================================================== -->
-    <!-- APPLICATION LOGIC: 4-LAYER SECURITY ENGINE & SIMULATOR                -->
-    <!-- ===================================================================== -->
-    <script>
-        (function () {
-            'use strict';
+    <!-- Real-World Detection Toggles -->
+    <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-3.5 space-y-2.5 text-xs">
+      <div class="font-semibold text-slate-300 uppercase tracking-wider mb-1">Active Protection Modules</div>
 
-            // -----------------------------------------------------------------
-            // 1. STATE & CRYPTOGRAPHIC / RANDOM HASH GENERATOR (LAYER 1)
-            // -----------------------------------------------------------------
-            const state = {
-                sessionSeed: '',
-                protectionMode: 'LOCKDOWN', // 'LOCKDOWN' | 'LOG_ONLY'
-                isLockedDown: false,
-                whitelistBenign: false,
-                weakSetCount: 0,
-                selectorMap: {}, // Server-side secret mapping: semanticName -> { id, cls }
-                observer: null,
-                legitimateNodes: new WeakSet(), // Layer 3: In-memory WeakSet of verified portal nodes
-                honeypotNodeRef: null,
-                apiLogs: []
-            };
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-slate-300">1. Full DOM (`html`/`head`/`body`) Watcher</span>
+        <input type="checkbox" id="toggle-dom-watch" checked class="accent-emerald-500 h-4 w-4" />
+      </label>
 
-            // Authentic Student Data (Removed from DOM during Layer 4 Lockdown)
-            const STUDENT_RECORD = {
-                name: 'Amina Rahman',
-                studentId: 'STU-2024-88412',
-                program: 'B.Sc. in Computer Science & Engineering',
-                standing: 'Dean’s Honors List (Good Standing)',
-                cgpa: '3.94 / 4.00',
-                creditsCompleted: '108 / 136',
-                financialAidBalance: '$1,450.00 (Spring Disbursement Ready)',
-                advisor: 'Dr. Farhan Chowdhury',
-                courses: [
-                    { code: 'CSE-401', title: 'Network & Systems Security', credits: '3.0', grade: 'A', attendance: '96%' },
-                    { code: 'CSE-412', title: 'Cryptography & Applied Protocols', credits: '3.0', grade: 'A', attendance: '100%' },
-                    { code: 'CSE-429', title: 'Distributed Database Systems', credits: '3.0', grade: 'A-', attendance: '92%' },
-                    { code: 'MAT-350', title: 'Applied Linear Algebra & Stochastic Processes', credits: '3.0', grade: 'A', attendance: '95%' }
-                ],
-                // Layer 2 Honeypot Canary Data
-                honeypotCanary: {
-                    name: 'CANARY_DECOY_RECORD_DO_NOT_SCRAPE',
-                    studentId: 'ID-999999',
-                    cgpa: '4.00',
-                    canaryToken: 'TRAP-TOKEN-999999-X89A'
-                }
-            };
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-slate-300">2. Real Dark-Theme / CSS Filter Canary</span>
+        <input type="checkbox" id="toggle-css-canary" checked class="accent-emerald-500 h-4 w-4" />
+      </label>
 
-            // Generate random obfuscated alphanumeric token (starts with a letter for valid CSS selector)
-            function generateHash(length = 6) {
-                const letters = 'abcdefghijklmnopqrstuvwxyz';
-                const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-                let result = letters.charAt(Math.floor(Math.random() * letters.length));
-                for (let i = 1; i < length; i++) {
-                    result += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return result;
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-slate-300">3. Block Right-Click & DevTools Shortcuts</span>
+        <input type="checkbox" id="toggle-inspect-block" checked class="accent-emerald-500 h-4 w-4" />
+      </label>
+
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-slate-300">4. Lock on DevTools Open / Resize</span>
+        <input type="checkbox" id="toggle-devtools-lock" checked class="accent-emerald-500 h-4 w-4" />
+      </label>
+
+      <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
+        <span class="text-slate-400">Response Mode:</span>
+        <select id="response-mode" class="bg-slate-800 text-white rounded px-2 py-1 border border-slate-700 text-xs">
+          <option value="lockdown" selected>Immediate Lockdown</option>
+          <option value="log">Log-Only (No Lockout)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Manual Scan & Test Actions -->
+    <div class="space-y-2">
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Test Real or Simulated Attacks</div>
+
+      <button onclick="runFullIntegrityAudit(true)" class="w-full py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition flex items-center justify-between">
+        <span>Scan for Active Browser Extensions Now</span>
+        <span class="mono bg-indigo-800 px-1.5 py-0.5 rounded text-[10px]">AUDIT</span>
+      </button>
+
+      <button onclick="simulateDarkThemeExtension()" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-medium text-xs transition text-left">
+        Simulate Real Dark Theme (`&lt;head&gt;` Style + Root Attr)
+      </button>
+
+      <button onclick="simulateHoneypotScrape()" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-medium text-xs transition text-left">
+        Trigger Honeypot Node &amp; Decoy API (#999999)
+      </button>
+
+      <button onclick="rotateSessionSelectors()" class="w-full py-2 px-3 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-700/50 text-emerald-300 font-medium text-xs transition text-left">
+        Re-Randomize Obfuscated Selectors (Layer 1)
+      </button>
+    </div>
+
+    <!-- Live Security Telemetry Log -->
+    <div class="flex-1 flex flex-col min-h-[200px] bg-black/80 border border-slate-800 rounded-lg overflow-hidden">
+      <div class="bg-slate-900 px-3 py-1.5 border-b border-slate-800 flex justify-between items-center text-[11px] text-slate-400">
+        <span class="mono font-semibold text-slate-300">LIVE SECURITY TELEMETRY</span>
+        <button onclick="clearTelemetry()" class="hover:text-white">Clear</button>
+      </div>
+      <div id="telemetry-log" class="p-3 space-y-1.5 overflow-y-auto mono text-[11px] flex-1 max-h-64"></div>
+    </div>
+  </aside>
+
+  <!-- RIGHT PANEL: PROTECTED UNIVERSITY STUDENT PORTAL -->
+  <main class="flex-1 bg-white text-slate-900 relative flex flex-col" id="portal-root">
+    <!-- Top Bar -->
+    <header class="border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4 bg-slate-50">
+      <div>
+        <span class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Protected Academic Session</span>
+        <h2 class="text-xl font-bold text-slate-900">University Student Portal</h2>
+      </div>
+      <div class="flex items-center gap-3 text-xs">
+        <span class="px-2.5 py-1 rounded-full bg-slate-200 text-slate-700 mono" id="session-badge">Session: #A9F-2026</span>
+        <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-medium">WeakSet DOM Guard: Armed</span>
+      </div>
+    </header>
+
+    <!-- Protected Data Content -->
+    <div id="portal-viewport" class="p-6 space-y-6 flex-1">
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-xs text-amber-900 space-y-1">
+        <div class="font-bold">How to test your real browser extensions on Vercel right now:</div>
+        <p>1. Enable your browser's <strong>Dark Reader / Dark Theme extension</strong> on this Vercel URL — the portal now watches <code>&lt;html&gt;</code>, <code>&lt;head&gt;</code>, and computed RGB colors and will immediately lock the session.</p>
+        <p>2. Try pressing <strong>F12</strong>, <strong>Ctrl+Shift+I</strong>, or <strong>Right-Click &rarr; Inspect</strong> — the shortcut is intercepted and logged, or opening docked DevTools triggers lockdown.</p>
+      </div>
+
+      <!-- Obfuscated Student Record Cards -->
+      <div id="sensitive-data-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Populated dynamically with randomized selectors -->
+      </div>
+
+      <!-- Hidden DOM Honeypot Trap -->
+      <div id="honeypot-wrapper" style="position:absolute; left:-9999px; top:-9999px; opacity:0; pointer-events:none;" aria-hidden="true">
+        <div id="hp-node" data-record-id="999999" class="student-cgpa-secret">4.00 | NID: 9999990001 | API_KEY_CANARY</div>
+      </div>
+
+      <!-- Live Inspector Table showing current randomized selectors & root attributes -->
+      <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+        <div class="px-4 py-3 bg-slate-100 border-b border-slate-200 flex justify-between items-center">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-700">Live Document &amp; Selector Integrity Monitor</span>
+          <span id="canary-rgb-readout" class="mono text-xs text-slate-600">Canary RGB: checking...</span>
+        </div>
+        <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs mono" id="inspector-readout"></div>
+      </div>
+    </div>
+
+    <!-- LAYER 4: AUTOMATIC FULL-SCREEN LOCKDOWN OVERLAY -->
+    <div id="lockdown-modal" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-6">
+      <div class="max-w-lg w-full bg-slate-900 border-2 border-rose-500 rounded-2xl p-6 shadow-2xl text-slate-100 space-y-4">
+        <div class="flex items-center gap-3 text-rose-400">
+          <svg class="w-8 h-8 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-widest bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded">Layer 4 Triggered — Session Terminated</span>
+            <h3 class="text-xl font-bold text-white mt-0.5">Suspicious Extension or Tampering Detected</h3>
+          </div>
+        </div>
+
+        <p class="text-sm text-slate-300 leading-relaxed">
+          Your session has been locked and <strong>all sensitive academic and personal records have been physically purged from the page DOM</strong>. Please disable third-party UI/Dark-Theme extensions or close Developer Tools, then re-verify with OTP.
+        </p>
+
+        <div class="bg-black/60 border border-rose-500/40 rounded-lg p-3 mono text-xs text-rose-300 space-y-1">
+          <div class="text-slate-400">Incident Forensic Reason:</div>
+          <div id="lockdown-reason" class="font-semibold text-rose-400">Unauthorized DOM modification</div>
+        </div>
+
+        <div class="pt-2 flex flex-col sm:flex-row gap-3">
+          <input type="text" id="otp-input" value="849201" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm mono text-white flex-1" placeholder="Enter 6-digit OTP" />
+          <button onclick="unlockAndRestoreSession()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">
+            Verify OTP &amp; Restore Clean Session
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ============================================================================
+    // STATE & TRUSTED WEAKSET REGISTRY
+    // ============================================================================
+    const trustedNodes = new WeakSet();
+    let isLockedDown = false;
+    let currentSelectors = {};
+
+    const SENSITIVE_RECORDS = [
+      { label: "Student Name & ID", value: "Tariqul Islam (ID: 2026-88412)", meta: "B.Sc. in Computer Science" },
+      { label: "Cumulative GPA (CGPA)", value: "3.92 / 4.00", meta: "Dean's Honors List — Fall 2026" },
+      { label: "Financial & NID Record", value: "NID: 19994820194 | Due: $0.00", meta: "Scholarship Tier A Verified" }
+    ];
+
+    function randomHash(len = 7) {
+      const chars = 'abcdefghijklmnopqrstuvwxyz';
+      const alnum = 'abcdefghijklmnopqrstuvwxyz0123456789';
+      let out = chars[Math.floor(Math.random() * chars.length)];
+      for (let i = 1; i < len; i++) out += alnum[Math.floor(Math.random() * alnum.length)];
+      return out;
+    }
+
+    function logEvent(level, msg) {
+      const container = document.getElementById('telemetry-log');
+      if (!container) return;
+      const colors = {
+        INFO: 'text-sky-400',
+        WARN: 'text-amber-400',
+        CRITICAL: 'text-rose-400 font-bold'
+      };
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      trustedNodes.add(entry);
+      entry.innerHTML = `<span class="text-slate-500">[${time}]</span> <span class="${colors[level] || 'text-slate-300'}">[${level}]</span> ${msg}`;
+      container.prepend(entry);
+    }
+
+    function clearTelemetry() {
+      document.getElementById('telemetry-log').innerHTML = '';
+      logEvent('INFO', 'Telemetry console cleared.');
+    }
+
+    // Register all existing legitimate nodes at boot
+    function registerSubtree(root) {
+      if (!root) return;
+      trustedNodes.add(root);
+      if (root.querySelectorAll) {
+        root.querySelectorAll('*').forEach(el => trustedNodes.add(el));
+      }
+    }
+
+    // ============================================================================
+    // LAYER 1: RANDOMIZED SELECTORS RENDERING
+    // ============================================================================
+    function renderProtectedData() {
+      const container = document.getElementById('sensitive-data-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      currentSelectors = {
+        nameCardId: randomHash(),
+        cgpaCardId: randomHash(),
+        finCardId: randomHash(),
+        sharedClass: randomHash(8)
+      };
+
+      const ids = [currentSelectors.nameCardId, currentSelectors.cgpaCardId, currentSelectors.finCardId];
+
+      SENSITIVE_RECORDS.forEach((rec, idx) => {
+        const card = document.createElement('div');
+        card.id = ids[idx];
+        card.className = `${currentSelectors.sharedClass} p-4 rounded-xl border border-slate-200 bg-white shadow-sm space-y-1.5`;
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-500">${rec.label}</span>
+            <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">#${ids[idx]} .${currentSelectors.sharedClass}</span>
+          </div>
+          <div class="text-lg font-bold text-slate-900">${rec.value}</div>
+          <div class="text-xs text-slate-500">${rec.meta}</div>
+        `;
+        registerSubtree(card);
+        container.appendChild(card);
+      });
+
+      updateInspectorReadout();
+    }
+
+    function rotateSessionSelectors() {
+      if (isLockedDown) return;
+      renderProtectedData();
+      document.getElementById('session-badge').textContent = `Session: #${randomHash(4).toUpperCase()}-2026`;
+      logEvent('INFO', `Layer 1 rotated selectors -> #${currentSelectors.nameCardId}, #${currentSelectors.cgpaCardId}`);
+    }
+
+    function updateInspectorReadout() {
+      const box = document.getElementById('inspector-readout');
+      if (!box) return;
+      const htmlAttrs = Array.from(document.documentElement.attributes).map(a => `${a.name}="${a.value}"`).join(' ');
+      const headStyles = document.head.querySelectorAll('style, link[rel="stylesheet"]').length;
+      box.innerHTML = `
+        <div class="p-2.5 bg-white rounded border border-slate-200">
+          <div class="text-slate-400 mb-1">&lt;html&gt; Root Attributes:</div>
+          <div class="text-slate-800 break-all">${htmlAttrs || 'none'}</div>
+        </div>
+        <div class="p-2.5 bg-white rounded border border-slate-200">
+          <div class="text-slate-400 mb-1">Active Obfuscated Selectors:</div>
+          <div class="text-indigo-700">#${currentSelectors.nameCardId} / #${currentSelectors.cgpaCardId} / .${currentSelectors.sharedClass}</div>
+          <div class="text-slate-500 mt-1">&lt;head&gt; Style Nodes Count: ${headStyles}</div>
+        </div>
+      `;
+      registerSubtree(box);
+    }
+
+    // ============================================================================
+    // LAYER 4: LOCKDOWN EXECUTION (PURGES SENSITIVE DOM DATA)
+    // ============================================================================
+    function triggerLockdown(reason) {
+      const mode = document.getElementById('response-mode').value;
+      logEvent('CRITICAL', `TRIPWIRE FIRED: ${reason}`);
+
+      if (mode === 'log') {
+        logEvent('WARN', 'Log-Only Mode active: Sensitive DOM preserved, alert recorded.');
+        updateInspectorReadout();
+        return;
+      }
+
+      if (isLockedDown) return;
+      isLockedDown = true;
+
+      // 1. Physically remove sensitive records from the DOM
+      const container = document.getElementById('sensitive-data-container');
+      if (container) {
+        container.innerHTML = `
+          <div class="col-span-3 p-6 rounded-xl border-2 border-dashed border-rose-300 bg-rose-50 text-rose-900 text-center text-sm font-semibold">
+            [SENSITIVE DOM NODES SCRUBBED FROM MEMORY BY LAYER 4 LOCKDOWN]
+          </div>
+        `;
+        registerSubtree(container);
+      }
+
+      // 2. Display Lockdown Screen
+      document.getElementById('lockdown-reason').textContent = reason;
+      document.getElementById('lockdown-modal').classList.remove('hidden');
+      document.getElementById('shield-status').className = 'h-3 w-3 rounded-full bg-rose-500 animate-ping';
+    }
+
+    function unlockAndRestoreSession() {
+      // Remove any injected simulated extension nodes or darkreader attributes so it doesn't immediately re-lock
+      document.querySelectorAll('.simulated-ext-node').forEach(el => el.remove());
+
+      isLockedDown = false;
+      document.getElementById('lockdown-modal').classList.add('hidden');
+      document.getElementById('shield-status').className = 'h-3 w-3 rounded-full bg-emerald-400 animate-pulse';
+      rotateSessionSelectors();
+      logEvent('INFO', 'OTP verified. Clean session restored with new randomized selectors.');
+    }
+
+    // ============================================================================
+    // LAYER 3A: FULL-DOCUMENT MUTATION OBSERVER (Watches <html>, <head>, and <body>)
+    // ============================================================================
+    const EXTENSION_ATTR_SIGNATURES = [
+      'data-darkreader-mode',
+      'data-darkreader-scheme',
+      'data-darkreader-Inline-bgcolor',
+      'data-darkreader-inline-color',
+      'nighteye',
+      'data-theme-ext'
+    ];
+
+    const observer = new MutationObserver((mutations) => {
+      if (!document.getElementById('toggle-dom-watch').checked) return;
+
+      for (const m of mutations) {
+        // Check attribute tampering on <html>, <body>, or portal elements (catches Dark Reader / theme extensions)
+        if (m.type === 'attributes') {
+          const attrName = m.attributeName?.toLowerCase() || '';
+          const targetTag = m.target.tagName?.toLowerCase() || '';
+          if (
+            attrName.includes('darkreader') ||
+            attrName.includes('nighteye') ||
+            EXTENSION_ATTR_SIGNATURES.includes(attrName) ||
+            ((targetTag === 'html' || targetTag === 'body') && (attrName === 'style' || attrName === 'class') && !trustedNodes.has(m.target))
+          ) {
+            triggerLockdown(`Unauthorized attribute "${attrName}" injected onto <${targetTag}> by browser extension.`);
+            return;
+          }
+          // Even if <html> is in trustedNodes, inspect its attributes for dark mode hooks
+          if (targetTag === 'html' || targetTag === 'body') {
+            const val = m.target.getAttribute(m.attributeName) || '';
+            if (attrName.includes('dark') || val.toLowerCase().includes('dark')) {
+              triggerLockdown(`Root <${targetTag}> modified with dark-theme attribute (${attrName}="${val}").`);
+              return;
+            }
+          }
+        }
+
+        // Check added nodes anywhere in <head>, <html>, or <body>
+        if (m.type === 'childList') {
+          for (const node of m.addedNodes) {
+            if (node.nodeType !== 1) continue; // Element nodes only
+            if (trustedNodes.has(node)) continue;
+
+            const tag = node.tagName.toLowerCase();
+            const cls = (node.className || '').toString().toLowerCase();
+            const id = (node.id || '').toLowerCase();
+
+            // Catch <style class="darkreader"> or injected <link>/<script>/<div> in <head> or <body>
+            if (tag === 'style' || tag === 'link' || tag === 'script' || cls.includes('darkreader') || id.includes('darkreader')) {
+              triggerLockdown(`Untrusted <${tag}> node (class="${cls || 'none'}") injected into <${m.target.tagName.toLowerCase()}>.`);
+              return;
             }
 
-            // Generate a fresh per-session selector map (Layer 1)
-            function buildSessionSelectorMap() {
-                state.sessionSeed = '#' + generateHash(6).toUpperCase();
-                state.selectorMap = {
-                    studentName:   { legacy: '.student-name',       id: generateHash(6), cls: generateHash(6) },
-                    studentId:     { legacy: '#student-id',         id: generateHash(6), cls: generateHash(6) },
-                    cgpaBox:       { legacy: '#cgpa-box',           id: generateHash(6), cls: generateHash(6) },
-                    standingBox:   { legacy: '.academic-standing',  id: generateHash(6), cls: generateHash(6) },
-                    financeBox:    { legacy: '#financial-aid-bal',  id: generateHash(6), cls: generateHash(6) },
-                    gradesTable:   { legacy: '#course-grades-tbl',  id: generateHash(6), cls: generateHash(6) },
-                    honeypotTrap:  { legacy: '.student-record-row', id: generateHash(6), cls: generateHash(6) }
-                };
-            }
-
-            // -----------------------------------------------------------------
-            // 2. WEAKSET NODE FACTORY (LAYER 3)
-            // -----------------------------------------------------------------
-            // Every legitimate element created by the portal is registered in our private WeakSet.
-            // Notice: No visible `data-legit="true"` attribute is placed in the DOM, so extensions cannot forge it.
-            function createVerifiedElement(tag, options = {}) {
-                const el = document.createElement(tag);
-                if (options.id) el.id = options.id;
-                if (options.className) el.className = options.className;
-                if (options.textContent !== undefined) el.textContent = options.textContent;
-                if (options.innerHTML !== undefined) el.innerHTML = options.innerHTML;
-                if (options.attrs) {
-                    Object.entries(options.attrs).forEach(([k, v]) => el.setAttribute(k, v));
-                }
-                registerSubtreeInWeakSet(el);
-                return el;
-            }
-
-            function registerSubtreeInWeakSet(rootNode) {
-                if (rootNode.nodeType === Node.ELEMENT_NODE) {
-                    if (!state.legitimateNodes.has(rootNode)) {
-                        state.legitimateNodes.add(rootNode);
-                        state.weakSetCount++;
-                    }
-                    const children = rootNode.querySelectorAll('*');
-                    children.forEach(child => {
-                        if (!state.legitimateNodes.has(child)) {
-                            state.legitimateNodes.add(child);
-                            state.weakSetCount++;
-                        }
-                    });
-                }
-            }
-
-            // -----------------------------------------------------------------
-            // 3. RENDER PROTECTED STUDENT PORTAL (LAYERS 1 & 2)
-            // -----------------------------------------------------------------
-            function renderProtectedPortal(flashAnimation = false) {
-                const root = document.getElementById('portal-protected-root');
-
-                // Disconnect observer temporarily during legitimate portal re-render
-                if (state.observer) {
-                    state.observer.disconnect();
-                }
-
-                // Reset WeakSet and counter for the new session render
-                state.legitimateNodes = new WeakSet();
-                state.weakSetCount = 0;
-                state.legitimateNodes.add(root);
-
-                root.innerHTML = '';
-                buildSessionSelectorMap();
-
-                const map = state.selectorMap;
-                const flashCls = flashAnimation ? ' animate-hash' : '';
-
-                // Top Student Identity & Security Status Banner
-                const headerCard = createVerifiedElement('div', {
-                    className: `bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4${flashCls}`,
-                    innerHTML: `
-                        <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 font-bold text-xl shrink-0">
-                                AR
-                            </div>
-                            <div>
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <h2 id="${map.studentName.id}" class="${map.studentName.cls} text-lg font-bold text-slate-900">${STUDENT_RECORD.name}</h2>
-                                    <span class="text-[11px] font-mono bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded" title="Layer 1 Obfuscated Selector">
-                                        #${map.studentName.id} .${map.studentName.cls}
-                                    </span>
-                                </div>
-                                <p class="text-xs text-slate-500 mt-0.5">${STUDENT_RECORD.program} • Advisor: ${STUDENT_RECORD.advisor}</p>
-                                <div class="flex flex-wrap items-center gap-3 mt-1.5 text-xs">
-                                    <span class="font-mono text-slate-600">
-                                        ID: <strong id="${map.studentId.id}" class="${map.studentId.cls} text-slate-900">${STUDENT_RECORD.studentId}</strong>
-                                        <span class="text-[10px] text-sky-600">(#${map.studentId.id})</span>
-                                    </span>
-                                    <span class="text-slate-300">|</span>
-                                    <span class="text-emerald-700 font-medium">
-                                        <i class="fa-solid fa-award mr-1"></i>
-                                        <span id="${map.standingBox.id}" class="${map.standingBox.cls}">${STUDENT_RECORD.standing}</span>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex flex-col sm:flex-row lg:flex-col items-start sm:items-end justify-end gap-1.5 shrink-0 w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
-                            <div class="text-[11px] font-mono text-slate-400">ACTIVE SELECTOR SEED: <span class="text-slate-700 font-bold">${state.sessionSeed}</span></div>
-                            <div class="text-[11px] text-slate-500 flex items-center gap-1.5">
-                                <i class="fa-solid fa-shield-check text-emerald-600"></i>
-                                <span>Legacy classes (<code class="text-rose-600">.student-name</code>, <code class="text-rose-600">#cgpa-box</code>) stripped</span>
-                            </div>
-                        </div>
-                    `
-                });
-                root.appendChild(headerCard);
-
-                // KPI Cards Grid (CGPA, Credits, Financial Aid)
-                const kpiGrid = createVerifiedElement('div', {
-                    className: `grid grid-cols-1 md:grid-cols-3 gap-4${flashCls}`,
-                    innerHTML: `
-                        <!-- CGPA Card -->
-                        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Cumulative GPA</span>
-                                <span class="text-[10px] font-mono bg-sky-50 text-sky-700 px-2 py-0.5 rounded border border-sky-200">#${map.cgpaBox.id}</span>
-                            </div>
-                            <div id="${map.cgpaBox.id}" class="${map.cgpaBox.cls} text-2xl font-bold text-slate-900 mt-2">${STUDENT_RECORD.cgpa}</div>
-                            <div class="text-xs text-emerald-600 mt-1 flex items-center gap-1">
-                                <i class="fa-solid fa-arrow-trend-up"></i>
-                                <span>Top 3% of graduating cohort</span>
-                            </div>
-                        </div>
-
-                        <!-- Completed Credits Card -->
-                        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Degree Progress</span>
-                                <span class="text-[10px] font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded">Verified</span>
-                            </div>
-                            <div class="text-2xl font-bold text-slate-900 mt-2">${STUDENT_RECORD.creditsCompleted} <span class="text-sm font-normal text-slate-500">Cr.</span></div>
-                            <div class="w-full bg-slate-100 h-2 rounded-full mt-2.5 overflow-hidden">
-                                <div class="bg-indigo-600 h-full rounded-full" style="width: 79%"></div>
-                            </div>
-                        </div>
-
-                        <!-- Financial Aid & Tuition Balance Card -->
-                        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Financial Aid & Grant</span>
-                                <span class="text-[10px] font-mono bg-sky-50 text-sky-700 px-2 py-0.5 rounded border border-sky-200">#${map.financeBox.id}</span>
-                            </div>
-                            <div id="${map.financeBox.id}" class="${map.financeBox.cls} text-lg font-bold text-slate-900 mt-2">${STUDENT_RECORD.financialAidBalance}</div>
-                            <div class="text-xs text-slate-500 mt-1">Direct Deposit Account: ****4829</div>
-                        </div>
-                    `
-                });
-                root.appendChild(kpiGrid);
-
-                // LAYER 2: HIDDEN DOM HONEYPOT ELEMENT
-                // Looks identical in structure and obfuscated naming to real containers,
-                // but positioned off-screen and monitored for read/attribute/removal tampering.
-                const honeypotNode = createVerifiedElement('div', {
-                    id: map.honeypotTrap.id,
-                    className: `${map.honeypotTrap.cls} sr-decoy-trap`,
-                    attrs: {
-                        'aria-hidden': 'true',
-                        'data-record-ref': '999999'
-                    },
-                    innerHTML: `
-                        <span class="${generateHash(6)}">${STUDENT_RECORD.honeypotCanary.name}</span>
-                        <span class="${generateHash(6)}">${STUDENT_RECORD.honeypotCanary.studentId}</span>
-                        <span class="${generateHash(6)}">CGPA: ${STUDENT_RECORD.honeypotCanary.cgpa}</span>
-                        <span class="${generateHash(6)}">${STUDENT_RECORD.honeypotCanary.canaryToken}</span>
-                    `
-                });
-                state.honeypotNodeRef = honeypotNode;
-                root.appendChild(honeypotNode);
-
-                // Enrolled Courses & Official Grades Table
-                const courseRowsHtml = STUDENT_RECORD.courses.map(course => `
-                    <tr class="hover:bg-slate-50/80 transition">
-                        <td class="py-3 px-4 font-mono text-xs font-semibold text-indigo-700">${course.code}</td>
-                        <td class="py-3 px-4 text-xs font-medium text-slate-800">${course.title}</td>
-                        <td class="py-3 px-4 text-xs text-slate-600">${course.credits}</td>
-                        <td class="py-3 px-4 text-xs text-slate-600">${course.attendance}</td>
-                        <td class="py-3 px-4">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                ${course.grade}
-                            </span>
-                        </td>
-                    </tr>
-                `).join('');
-
-                const coursesCard = createVerifiedElement('div', {
-                    id: map.gradesTable.id,
-                    className: `${map.gradesTable.cls} bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden${flashCls}`,
-                    innerHTML: `
-                        <div class="px-5 py-3.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
-                            <div>
-                                <h3 class="text-sm font-bold text-slate-800">Current Semester Official Grade & Attendance Ledger</h3>
-                                <p class="text-xs text-slate-500">Protected by randomized container <code class="font-mono text-sky-700">#${map.gradesTable.id} .${map.gradesTable.cls}</code></p>
-                            </div>
-                            <span class="text-[11px] font-mono bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-md flex items-center gap-1.5">
-                                <i class="fa-solid fa-check-double"></i>
-                                WeakSet Verified Subtree
-                            </span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                                        <th class="py-2.5 px-4">Course Code</th>
-                                        <th class="py-2.5 px-4">Course Title</th>
-                                        <th class="py-2.5 px-4">Credits</th>
-                                        <th class="py-2.5 px-4">Attendance</th>
-                                        <th class="py-2.5 px-4">Current Grade</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-200">
-                                    ${courseRowsHtml}
-                                </tbody>
-                            </table>
-                        </div>
-                    `
-                });
-                root.appendChild(coursesCard);
-
-                // Re-ensure all child nodes are in the WeakSet
-                registerSubtreeInWeakSet(root);
-
-                // Log legitimate API call for normal portal render
-                recordApiRequest('/api/v1/student/88412/profile', 'Portal UI (WeakSet)', '200 OK (LEGIT)');
-
-                // Update Inspector UI & Telemetry
-                updateInspectorViews();
-                updateMetricsUI();
-
-                // Re-arm Layer 3 MutationObserver
-                initLayer3MutationObserver();
-            }
-
-            // -----------------------------------------------------------------
-            // 4. LAYER 3: TRIPWIRE MONITORING (WeakSet + MutationObserver)
-            // -----------------------------------------------------------------
-            function initLayer3MutationObserver() {
-                const root = document.getElementById('portal-protected-root');
-                if (state.observer) {
-                    state.observer.disconnect();
-                }
-
-                state.observer = new MutationObserver((mutations) => {
-                    if (state.isLockedDown) return;
-
-                    for (const mutation of mutations) {
-                        // 1. Check for unauthorized injected nodes (not in our private WeakSet)
-                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                            for (const node of mutation.addedNodes) {
-                                if (node.nodeType === Node.ELEMENT_NODE) {
-                                    if (!state.legitimateNodes.has(node)) {
-                                        handleUnauthorizedNodeDetected(node);
-                                        return;
-                                    }
-                                }
-                            }
-                        }
-
-                        // 2. Check if the Honeypot node was removed by an extension
-                        if (mutation.type === 'childList' && mutation.removedNodes.length > 0) {
-                            for (const node of mutation.removedNodes) {
-                                if (node === state.honeypotNodeRef) {
-                                    triggerSecurityResponse(
-                                        'CRITICAL',
-                                        'Layer 2/3 Tripwire: Hidden DOM Honeypot node was removed or detached by an external script!'
-                                    );
-                                    return;
-                                }
-                            }
-                        }
-
-                        // 3. Check if attributes or contents of the Honeypot node were modified
-                        if (
-                            mutation.target === state.honeypotNodeRef ||
-                            (state.honeypotNodeRef && state.honeypotNodeRef.contains(mutation.target))
-                        ) {
-                            markHoneypotTouchedUI();
-                            triggerSecurityResponse(
-                                'CRITICAL',
-                                `Layer 2/3 Tripwire: Unauthorized tampering detected on hidden DOM Honeypot (#${state.selectorMap.honeypotTrap.id})!`
-                            );
-                            return;
-                        }
-                    }
-                });
-
-                state.observer.observe(root, {
-                    childList: true,
-                    subtree: true,
-                    attributes: true,
-                    characterData: true
-                });
-            }
-
-            function handleUnauthorizedNodeDetected(injectedNode) {
-                const tagName = injectedNode.tagName.toLowerCase();
-                const isBenignGrammarly = tagName === 'grammarly-extension' || injectedNode.dataset.benignExtension === 'true';
-
-                // Check if user enabled benign signature whitelisting
-                if (isBenignGrammarly && state.whitelistBenign) {
-                    logTelemetry(
-                        'INFO',
-                        'Layer 3 Filter: Ignored whitelisted benign extension node <grammarly-extension>.'
-                    );
-                    return;
-                }
-
-                const descriptor = `<${tagName}${injectedNode.id ? '#' + injectedNode.id : ''}${injectedNode.className ? '.' + String(injectedNode.className).split(' ').join('.') : ''}>`;
-
-                if (isBenignGrammarly && state.protectionMode === 'LOG_ONLY') {
-                    logTelemetry(
-                        'WARN',
-                        `Log-Only Mode: Unverified node ${descriptor} detected (not in WeakSet). Logged for whitelist review without locking session.`
-                    );
-                    return;
-                }
-
-                triggerSecurityResponse(
-                    'CRITICAL',
-                    `Layer 3 Tripwire (MutationObserver): Unauthorized DOM node ${descriptor} injected! Node is absent from portal's private WeakSet.`
-                );
-            }
-
-            // -----------------------------------------------------------------
-            // 5. LAYER 4: AUTOMATIC LOCKDOWN RESPONSE & DOM SCRUBBING
-            // -----------------------------------------------------------------
-            function triggerSecurityResponse(severity, reasonText) {
-                if (state.protectionMode === 'LOG_ONLY') {
-                    logTelemetry(
-                        'WARN',
-                        `[LOG-ONLY MODE] Tripwire fired but lockdown suppressed: ${reasonText}`
-                    );
-                    return;
-                }
-
-                if (state.isLockedDown) return;
-                state.isLockedDown = true;
-
-                // Disconnect observer while we scrub the DOM
-                if (state.observer) {
-                    state.observer.disconnect();
-                }
-
-                logTelemetry('CRITICAL', `LAYER 4 LOCKDOWN EXECUTED: ${reasonText}`);
-                logTelemetry('CRITICAL', 'Action 1: Scrubbing all sensitive academic & financial nodes from DOM...');
-                logTelemetry('CRITICAL', 'Action 2: Reporting incident to University SOC & revoking session token...');
-
-                // 1. IMMEDIATELY WIPE SENSITIVE DATA FROM THE DOM (Not just hidden!)
-                const root = document.getElementById('portal-protected-root');
-                root.innerHTML = `
-                    <!-- LAYER 4 EMERGENCY DOM SCRUB EXECUTED -->
-                    <div class="p-8 rounded-2xl bg-rose-950/10 border-2 border-dashed border-rose-400 text-center my-6">
-                        <div class="text-rose-600 font-mono text-sm font-bold uppercase">
-                            [SENSITIVE STUDENT DATA SCRUBBED FROM DOM MEMORY]
-                        </div>
-                        <p class="text-xs text-slate-600 mt-1">
-                            All academic grades, CGPA, and financial aid nodes have been permanently destroyed from document.body to prevent harvesting.
-                        </p>
-                    </div>
-                `;
-
-                // 2. Update Live DOM Inspector so user can verify the HTML is genuinely gone
-                const liveHtmlPre = document.getElementById('inspector-live-html');
-                liveHtmlPre.textContent =
-`<!-- LAYER 4 LOCKDOWN: SENSITIVE DOM NODES DESTROYED -->
-<div id="portal-protected-root">
-  <!-- Student Name, ID, CGPA, Financial Aid, and Grades Table 
-       have been completely removed from the DOM tree. -->
-</div>`;
-                liveHtmlPre.className = 'bg-rose-950 text-rose-300 rounded-lg p-3.5 font-mono text-[11px] leading-relaxed overflow-x-auto border border-rose-700 max-h-56';
-
-                const snapshotStatus = document.getElementById('dom-snapshot-status');
-                snapshotStatus.textContent = 'SCRUBBED (0 SENSITIVE NODES)';
-                snapshotStatus.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-rose-600 text-white font-semibold';
-
-                // 3. Update Top URL Badge & Telemetry Metrics
-                const urlBadge = document.getElementById('url-session-badge');
-                urlBadge.textContent = 'SESSION: REVOKED (403)';
-                urlBadge.className = 'text-[10px] font-mono bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded border border-rose-300 shrink-0 font-bold';
-
-                const obsMetric = document.getElementById('metric-observer');
-                obsMetric.innerHTML = `
-                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                    <span class="font-mono text-xs font-semibold text-rose-400">TRIPPED!</span>
-                `;
-
-                // 4. Display Full-Screen Lockdown Warning Modal
-                document.getElementById('lockdown-reason').textContent = reasonText;
-                document.getElementById('lockdown-overlay').classList.remove('hidden');
-            }
-
-            // -----------------------------------------------------------------
-            // 6. SIMULATOR ATTACK & BENIGN TEST HANDLERS
-            // -----------------------------------------------------------------
-
-            // Attack 1: Legacy Scraper looking for fixed selectors (.student-name, #cgpa-box)
-            function simulateAttack1LegacyScraper() {
-                if (state.isLockedDown) {
-                    logTelemetry('WARN', 'Session is currently locked down. Unlock with OTP first.');
-                    return;
-                }
-
-                logTelemetry('INFO', 'Extension Action: Running Legacy Scraper querying `.student-name`, `#cgpa-box`, `#financial-aid-bal`...');
-
-                const root = document.getElementById('portal-protected-root');
-                const legacySelectors = ['.student-name', '#student-id', '#cgpa-box', '#financial-aid-bal', '#course-grades-tbl'];
-                const results = legacySelectors.map(sel => `${sel} → ${root.querySelector(sel)}`);
-
-                logTelemetry(
-                    'SUCCESS',
-                    `Layer 1 Blocked Scraper: All hardcoded queries returned null! [${results.join(', ')}]. Current live CGPA selector is #${state.selectorMap.cgpaBox.id}.`
-                );
-
-                // Switch to Layer 1 Inspector tab and highlight mapping
-                switchInspectorTab('dom');
-            }
-
-            // Attack 2: Malicious "UI Theme" Extension injects an unauthorized DOM element
-            function simulateAttack2InjectThemeBanner() {
-                if (state.isLockedDown) {
-                    logTelemetry('WARN', 'Session is currently locked down. Unlock with OTP first.');
-                    return;
-                }
-
-                logTelemetry('WARN', 'Extension Action: "Custom UI Theme" extension injecting unauthorized toolbar node into portal DOM...');
-
-                const root = document.getElementById('portal-protected-root');
-                const maliciousNode = document.createElement('div');
-                maliciousNode.id = 'ext-theme-enhancer-bar';
-                maliciousNode.className = 'p-3 rounded-lg bg-purple-900 text-white text-xs font-mono mb-3 flex items-center justify-between';
-                maliciousNode.innerHTML = `
-                    <span>🎨 Custom Theme Enhancer Active ( covertly reading DOM... )</span>
-                    <span>v1.2</span>
-                `;
-
-                // Note: We do NOT add maliciousNode to `state.legitimateNodes` WeakSet!
-                // Appending it immediately triggers our Layer 3 MutationObserver.
-                root.prepend(maliciousNode);
-            }
-
-            // Attack 3: Aggressive Scraper touches Honeypot node & requests API Decoy Record #999999
-            function simulateAttack3HoneypotAndDecoyApi() {
-                if (state.isLockedDown) {
-                    logTelemetry('WARN', 'Session is currently locked down. Unlock with OTP first.');
-                    return;
-                }
-
-                logTelemetry('WARN', 'Extension Action: Aggressive scraper enumerating all DOM nodes (including hidden containers) & polling discovered student IDs...');
-
-                // 1. Trigger API Decoy Endpoint (#999999)
-                recordApiRequest('/api/v1/student/999999/transcript', 'Extension Background Script', '403 CANARY TRAP');
-
-                // 2. Touch/Modify the hidden DOM Honeypot node (triggers Layer 3 MutationObserver)
-                if (state.honeypotNodeRef) {
-                    state.honeypotNodeRef.setAttribute('data-scraped-by-extension', 'true');
-                } else {
-                    triggerSecurityResponse(
-                        'CRITICAL',
-                        'Layer 2 Server Alert: Decoy Student Record ID #999999 requested via API!'
-                    );
-                }
-            }
-
-            // Benign Test 4: Simulate Grammarly / Password Manager DOM Injection
-            function simulateBenignExtension4() {
-                if (state.isLockedDown) {
-                    logTelemetry('WARN', 'Session is currently locked down. Unlock with OTP first.');
-                    return;
-                }
-
-                logTelemetry('INFO', 'Benign Extension Action: Injecting <grammarly-extension> helper widget into DOM...');
-
-                const root = document.getElementById('portal-protected-root');
-                const grammarlyNode = document.createElement('grammarly-extension');
-                grammarlyNode.dataset.benignExtension = 'true';
-                grammarlyNode.className = 'block p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono';
-                grammarlyNode.innerHTML = `<i class="fa-solid fa-spell-check mr-1.5"></i> Grammarly Writing Assistant Overlay (Benign 3rd-Party Extension)`;
-
-                root.prepend(grammarlyNode);
-            }
-
-            // -----------------------------------------------------------------
-            // 7. INSPECTOR, API MONITOR & TELEMETRY UI HELPERS
-            // -----------------------------------------------------------------
-            function updateInspectorViews() {
-                const map = state.selectorMap;
-                const tbody = document.getElementById('inspector-mapping-tbody');
-                tbody.innerHTML = Object.entries(map).map(([key, val]) => `
-                    <tr>
-                        <td class="py-1.5 font-sans font-medium text-slate-300">${key}</td>
-                        <td class="py-1.5 text-rose-400 line-through">${val.legacy}</td>
-                        <td class="py-1.5 text-sky-300 font-semibold">#${val.id} .${val.cls}</td>
-                    </tr>
-                `).join('');
-
-                // Live Obfuscated HTML preview
-                const liveHtmlPre = document.getElementById('inspector-live-html');
-                liveHtmlPre.className = 'bg-slate-900 text-emerald-300 rounded-lg p-3.5 font-mono text-[11px] leading-relaxed overflow-x-auto border border-slate-800 max-h-56';
-                liveHtmlPre.textContent =
-`<!-- Per-Session Obfuscated DOM (Seed ${state.sessionSeed}) -->
-<div id="portal-protected-root">
-  <!-- Student Name & ID -->
-  <h2 id="${map.studentName.id}" class="${map.studentName.cls}">${STUDENT_RECORD.name}</h2>
-  <strong id="${map.studentId.id}" class="${map.studentId.cls}">${STUDENT_RECORD.studentId}</strong>
-
-  <!-- CGPA & Financial Aid Containers -->
-  <div id="${map.cgpaBox.id}" class="${map.cgpaBox.cls}">${STUDENT_RECORD.cgpa}</div>
-  <div id="${map.financeBox.id}" class="${map.financeBox.cls}">${STUDENT_RECORD.financialAidBalance}</div>
-
-  <!-- Layer 2 Off-Screen Honeypot Canary Node -->
-  <div id="${map.honeypotTrap.id}" class="${map.honeypotTrap.cls} sr-decoy-trap" data-record-ref="999999">
-    <span>${STUDENT_RECORD.honeypotCanary.name} (${STUDENT_RECORD.honeypotCanary.canaryToken})</span>
-  </div>
-</div>`;
-
-                const snapshotStatus = document.getElementById('dom-snapshot-status');
-                snapshotStatus.textContent = 'DATA PRESENT (OBFUSCATED)';
-                snapshotStatus.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold';
-
-                // Honeypot preview
-                const hpPreview = document.getElementById('honeypot-dom-preview');
-                hpPreview.textContent = `<div id="${map.honeypotTrap.id}" class="${map.honeypotTrap.cls} sr-decoy-trap" data-record-ref="999999">
-  ${STUDENT_RECORD.honeypotCanary.name} • ${STUDENT_RECORD.honeypotCanary.canaryToken}
-</div>`;
-
-                const hpBadge = document.getElementById('honeypot-dom-badge');
-                hpBadge.textContent = 'UNTOUCHED';
-                hpBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold';
-            }
-
-            function markHoneypotTouchedUI() {
-                const hpBadge = document.getElementById('honeypot-dom-badge');
-                hpBadge.textContent = 'TAMPERED / TRIPPED!';
-                hpBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-rose-600 text-white font-semibold';
-
-                const hpMetric = document.getElementById('metric-honeypot');
-                hpMetric.textContent = 'ALARM TRIPPED';
-                hpMetric.className = 'font-mono text-xs font-semibold text-rose-400 mt-0.5';
-            }
-
-            function recordApiRequest(endpoint, origin, verdict) {
-                const time = new Date().toLocaleTimeString([], { hour12: false });
-                const isTrap = verdict.includes('TRAP');
-                state.apiLogs.unshift({ time, endpoint, origin, verdict, isTrap });
-                state.apiLogs = state.apiLogs.slice(0, 6);
-
-                const tbody = document.getElementById('api-monitor-tbody');
-                tbody.innerHTML = state.apiLogs.map(item => `
-                    <tr class="${item.isTrap ? 'bg-rose-50 font-semibold' : ''}">
-                        <td class="py-1.5 text-slate-500">${item.time}</td>
-                        <td class="py-1.5 ${item.isTrap ? 'text-rose-700' : 'text-slate-700'}">${item.endpoint}</td>
-                        <td class="py-1.5 text-slate-600">${item.origin}</td>
-                        <td class="py-1.5">
-                            <span class="px-1.5 py-0.5 rounded text-[10px] ${item.isTrap ? 'bg-rose-600 text-white' : 'bg-emerald-100 text-emerald-800'}">
-                                ${item.verdict}
-                            </span>
-                        </td>
-                    </tr>
-                `).join('');
-            }
-
-            function updateMetricsUI() {
-                document.getElementById('metric-seed').textContent = state.sessionSeed;
-                document.getElementById('metric-weakset').textContent = state.weakSetCount;
-
-                const obsMetric = document.getElementById('metric-observer');
-                obsMetric.innerHTML = `
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 relative sensor-pulse"></span>
-                    <span class="font-mono text-xs font-semibold text-emerald-400">ARMED</span>
-                `;
-
-                const hpMetric = document.getElementById('metric-honeypot');
-                hpMetric.textContent = '2 ARMED';
-                hpMetric.className = 'font-mono text-xs font-semibold text-amber-400 mt-0.5';
-
-                const urlBadge = document.getElementById('url-session-badge');
-                urlBadge.textContent = 'SESSION: VALID';
-                urlBadge.className = 'text-[10px] font-mono bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0';
-            }
-
-            function logTelemetry(level, message) {
-                const container = document.getElementById('telemetry-log');
-                const time = new Date().toLocaleTimeString([], { hour12: false });
-
-                const badgeStyles = {
-                    INFO: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
-                    SUCCESS: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-                    WARN: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-                    CRITICAL: 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                };
-
-                const entry = document.createElement('div');
-                entry.className = 'p-2 rounded bg-slate-900/90 border border-slate-800/90 flex items-start gap-2 leading-relaxed';
-                entry.innerHTML = `
-                    <span class="text-[10px] text-slate-500 shrink-0">${time}</span>
-                    <span class="text-[9px] px-1.5 py-0.2 rounded border font-bold shrink-0 ${badgeStyles[level] || badgeStyles.INFO}">${level}</span>
-                    <span class="text-slate-200 break-words">${message}</span>
-                `;
-                container.prepend(entry);
-            }
-
-            function switchInspectorTab(tab) {
-                const domBtn = document.getElementById('tab-btn-dom');
-                const apiBtn = document.getElementById('tab-btn-api');
-                const domPanel = document.getElementById('tab-panel-dom');
-                const apiPanel = document.getElementById('tab-panel-api');
-
-                if (tab === 'dom') {
-                    domPanel.classList.remove('hidden');
-                    apiPanel.classList.add('hidden');
-                    domBtn.className = 'text-xs px-3 py-1 rounded-md font-medium bg-sky-500 text-white transition';
-                    apiBtn.className = 'text-xs px-3 py-1 rounded-md font-medium text-slate-300 hover:bg-slate-800 transition';
-                } else {
-                    domPanel.classList.add('hidden');
-                    apiPanel.classList.remove('hidden');
-                    apiBtn.className = 'text-xs px-3 py-1 rounded-md font-medium bg-sky-500 text-white transition';
-                    domBtn.className = 'text-xs px-3 py-1 rounded-md font-medium text-slate-300 hover:bg-slate-800 transition';
-                }
-            }
-
-            function setProtectionMode(mode) {
-                state.protectionMode = mode;
-                const btnLockdown = document.getElementById('btn-mode-lockdown');
-                const btnLog = document.getElementById('btn-mode-log');
-                const badge = document.getElementById('mode-badge');
-                const helper = document.getElementById('mode-helper-text');
-
-                if (mode === 'LOCKDOWN') {
-                    btnLockdown.className = 'text-xs py-1.5 px-2.5 rounded-md font-medium transition flex items-center justify-center gap-1.5 bg-rose-600 text-white shadow';
-                    btnLog.className = 'text-xs py-1.5 px-2.5 rounded-md font-medium transition flex items-center justify-center gap-1.5 text-slate-400 hover:text-white';
-                    badge.textContent = 'ACTIVE LOCKDOWN';
-                    badge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold';
-                    helper.innerHTML = `<strong class="text-slate-200">Active Lockdown Mode:</strong> Any unauthorized DOM injection or honeypot access immediately scrubs sensitive data from the DOM and invalidates the session.`;
-                    logTelemetry('INFO', 'Policy changed to ACTIVE LOCKDOWN MODE (Layer 4 armed).');
-                } else {
-                    btnLog.className = 'text-xs py-1.5 px-2.5 rounded-md font-medium transition flex items-center justify-center gap-1.5 bg-amber-500 text-slate-950 font-semibold shadow';
-                    btnLockdown.className = 'text-xs py-1.5 px-2.5 rounded-md font-medium transition flex items-center justify-center gap-1.5 text-slate-400 hover:text-white';
-                    badge.textContent = 'LOG-ONLY MODE';
-                    badge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold';
-                    helper.innerHTML = `<strong class="text-amber-300">Log-Only Mode (Safe Rollout):</strong> Tripwire alerts are recorded to telemetry without locking out students, allowing IT to whitelist benign extensions first.`;
-                    logTelemetry('INFO', 'Policy changed to LOG-ONLY MODE for false-positive tuning.');
-                }
-            }
-
-            function unlockAndResetSession() {
-                state.isLockedDown = false;
-                document.getElementById('lockdown-overlay').classList.add('hidden');
-                renderProtectedPortal(true);
-                logTelemetry(
-                    'SUCCESS',
-                    `Session restored via OTP verification. Generated new selector seed (${state.sessionSeed}) & re-armed WeakSet tripwires.`
-                );
-            }
-
-            // -----------------------------------------------------------------
-            // 8. WIRE UP UI EVENT LISTENERS ON LOAD
-            // -----------------------------------------------------------------
-            window.addEventListener('DOMContentLoaded', () => {
-                // Initial portal render
-                renderProtectedPortal(false);
-                logTelemetry(
-                    'SUCCESS',
-                    `Portal initialized with Session Seed ${state.sessionSeed}. Registered ${state.weakSetCount} legitimate DOM nodes in private WeakSet.`
-                );
-
-                // Mode buttons
-                document.getElementById('btn-mode-lockdown').addEventListener('click', () => setProtectionMode('LOCKDOWN'));
-                document.getElementById('btn-mode-log').addEventListener('click', () => setProtectionMode('LOG_ONLY'));
-
-                // Simulator Attack & Benign Buttons
-                document.getElementById('btn-attack-1').addEventListener('click', simulateAttack1LegacyScraper);
-                document.getElementById('btn-attack-2').addEventListener('click', simulateAttack2InjectThemeBanner);
-                document.getElementById('btn-attack-3').addEventListener('click', simulateAttack3HoneypotAndDecoyApi);
-                document.getElementById('btn-attack-4').addEventListener('click', simulateBenignExtension4);
-
-                // Whitelist checkbox
-                document.getElementById('chk-whitelist-benign').addEventListener('change', (e) => {
-                    state.whitelistBenign = e.target.checked;
-                    logTelemetry(
-                        'INFO',
-                        state.whitelistBenign
-                            ? 'Signature whitelist enabled for <grammarly-extension>.'
-                            : 'Signature whitelist disabled.'
-                    );
-                });
-
-                // Re-randomize selectors / Reset buttons
-                document.getElementById('btn-rerandomize').addEventListener('click', () => {
-                    if (state.isLockedDown) {
-                        unlockAndResetSession();
-                    } else {
-                        renderProtectedPortal(true);
-                        logTelemetry('INFO', `Rotated all DOM IDs and classes. New Session Seed: ${state.sessionSeed}.`);
-                    }
-                });
-
-                document.getElementById('btn-reset-demo').addEventListener('click', unlockAndResetSession);
-                document.getElementById('btn-unlock-otp').addEventListener('click', unlockAndResetSession);
-
-                // Minimize modal to inspect scrubbed DOM behind it
-                document.getElementById('btn-peek-dom').addEventListener('click', () => {
-                    document.getElementById('lockdown-overlay').classList.add('hidden');
-                    switchInspectorTab('dom');
-                    logTelemetry('INFO', 'Lockdown modal minimized so you can verify that sensitive DOM nodes were completely destroyed.');
-                });
-
-                // Manual API Decoy test button inside Tab 2
-                document.getElementById('btn-manual-decoy-api').addEventListener('click', () => {
-                    recordApiRequest('/api/v1/student/999999/transcript', 'Manual API Probe', '403 CANARY TRAP');
-                    triggerSecurityResponse(
-                        'CRITICAL',
-                        'Layer 2 API Trap: Request received for Decoy Student Record #999999!'
-                    );
-                });
-
-                // Inspector Tabs
-                document.getElementById('tab-btn-dom').addEventListener('click', () => switchInspectorTab('dom'));
-                document.getElementById('tab-btn-api').addEventListener('click', () => switchInspectorTab('api'));
-
-                // Clear Log
-                document.getElementById('btn-clear-log').addEventListener('click', () => {
-                    document.getElementById('telemetry-log').innerHTML = '';
-                });
-
-                // Architecture Modal
-                const archModal = document.getElementById('architecture-modal');
-                document.getElementById('btn-architecture-modal').addEventListener('click', () => archModal.classList.remove('hidden'));
-                document.getElementById('btn-close-architecture').addEventListener('click', () => archModal.classList.add('hidden'));
-                archModal.addEventListener('click', (e) => {
-                    if (e.target === archModal) archModal.classList.add('hidden');
-                });
-            });
-        })();
-    </script>
+            triggerLockdown(`Untrusted DOM element <${tag} id="${id}" class="${cls}"> injected outside WeakSet registry.`);
+            return;
+          }
+        }
+      }
+    });
+
+    // ============================================================================
+    // LAYER 3B: COMPUTED STYLE CANARY & PRE-LOAD EXTENSION AUDIT
+    // (Catches extensions that ran at document_start BEFORE JS booted, or use CSS Filters)
+    // ============================================================================
+    function runFullIntegrityAudit(isManual = false) {
+      if (isManual) logEvent('INFO', 'Running full DOM, <head>, and Computed CSS integrity audit...');
+
+      // 1. Scan <html> and <body> attributes for already-injected extension signatures
+      for (const rootEl of [document.documentElement, document.body]) {
+        for (const attr of Array.from(rootEl.attributes)) {
+          const name = attr.name.toLowerCase();
+          const val = (attr.value || '').toLowerCase();
+          if (name.includes('darkreader') || name.includes('nighteye') || val.includes('darkreader') || val.includes('darkmode')) {
+            triggerLockdown(`Pre-loaded extension signature detected on <${rootEl.tagName.toLowerCase()}>: ${attr.name}="${attr.value}"`);
+            return;
+          }
+        }
+      }
+
+      // 2. Scan <head> for unauthorized <style> or <link> tags (e.g., Dark Reader's <style class="darkreader">)
+      const headStyles = document.head.querySelectorAll('style.darkreader, style[id*="dark"], link[href*="chrome-extension://"], link[href*="moz-extension://"]');
+      if (headStyles.length > 0) {
+        triggerLockdown(`Extension stylesheet detected inside <head> (${headStyles[0].tagName} .${headStyles[0].className})`);
+        return;
+      }
+
+      // 3. Check Computed CSS Color Canary (Detects CSS filter: invert() or forced dark background)
+      if (document.getElementById('toggle-css-canary').checked) {
+        const canary = document.getElementById('css-integrity-canary');
+        if (canary) {
+          const computed = window.getComputedStyle(canary);
+          const bg = computed.backgroundColor;
+          const filter = computed.filter || window.getComputedStyle(document.documentElement).filter;
+          const readout = document.getElementById('canary-rgb-readout');
+          if (readout) readout.textContent = `Canary RGB: ${bg} | Filter: ${filter}`;
+
+          // Expected exact background is rgb(254, 254, 254)
+          if (bg !== 'rgb(254, 254, 254)' && bg !== 'rgba(254, 254, 254, 1)') {
+            triggerLockdown(`CSS Color Canary altered! Expected rgb(254, 254, 254) but browser rendered ${bg} (Dark Theme extension active).`);
+            return;
+          }
+          if (filter && filter !== 'none') {
+            triggerLockdown(`Root CSS Filter manipulation detected (filter: ${filter}).`);
+            return;
+          }
+        }
+      }
+
+      updateInspectorReadout();
+      if (isManual) logEvent('INFO', 'Integrity audit passed: No unauthorized <head> styles or CSS mutations found.');
+    }
+
+    // ============================================================================
+    // INSPECT MODE & DEVTOOLS DETERRENT / DETECTION
+    // ============================================================================
+    // 1. Block Right-Click Context Menu
+    window.addEventListener('contextmenu', (e) => {
+      if (!document.getElementById('toggle-inspect-block').checked) return;
+      e.preventDefault();
+      logEvent('WARN', 'Blocked Right-Click context menu (Inspect Element deterrent).');
+    });
+
+    // 2. Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U
+    window.addEventListener('keydown', (e) => {
+      if (!document.getElementById('toggle-inspect-block').checked) return;
+      const key = e.key.toUpperCase();
+      const isF12 = e.key === 'F12';
+      const isDevCombo = (e.ctrlKey || e.metaKey) && e.shiftKey && ['I', 'J', 'C'].includes(key);
+      const isViewSource = (e.ctrlKey || e.metaKey) && key === 'U';
+
+      if (isF12 || isDevCombo || isViewSource) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerLockdown(`Blocked DevTools keyboard shortcut (${isF12 ? 'F12' : 'Ctrl/Cmd+Shift+' + key}).`);
+      }
+    });
+
+    // 3. Detect Docked DevTools via Outer/Inner Window Viewport Differential
+    let baselineDiffW = Math.abs(window.outerWidth - window.innerWidth);
+    let baselineDiffH = Math.abs(window.outerHeight - window.innerHeight);
+
+    window.addEventListener('resize', () => {
+      if (!document.getElementById('toggle-devtools-lock').checked) return;
+      const diffW = Math.abs(window.outerWidth - window.innerWidth);
+      const diffH = Math.abs(window.outerHeight - window.innerHeight);
+
+      // If docked DevTools suddenly consumes > 160px of viewport width or height compared to baseline
+      if ((diffW - baselineDiffW > 160) || (diffH - baselineDiffH > 160)) {
+        triggerLockdown(`Docked Browser Developer Tools detected via viewport differential (${diffW}px / ${diffH}px).`);
+      }
+    });
+
+    // ============================================================================
+    // SIMULATOR HELPERS FOR TESTING
+    // ============================================================================
+    function simulateDarkThemeExtension() {
+      logEvent('WARN', 'Simulating real Dark Reader / Dark Theme extension behavior...');
+      const style = document.createElement('style');
+      style.className = 'darkreader darkreader--sync simulated-ext-node';
+      style.textContent = '#css-integrity-canary { background-color: rgb(24, 26, 27) !important; }';
+      document.head.appendChild(style);
+      document.documentElement.setAttribute('data-darkreader-mode', 'dynamic');
+    }
+
+    function simulateHoneypotScrape() {
+      logEvent('WARN', 'Simulating scraper enumerating hidden honeypot node & querying /api/student/999999...');
+      const hp = document.getElementById('hp-node');
+      if (hp) {
+        hp.setAttribute('data-scraped', 'true');
+      }
+      triggerLockdown('Honeypot Canary Node (#hp-node) & Decoy API Record #999999 accessed by automated script.');
+    }
+
+    // ============================================================================
+    // INITIALIZATION
+    // ============================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      registerSubtree(document.documentElement);
+      renderProtectedData();
+
+      // Observe the ENTIRE document (<html>, <head>, and <body>) — not just a single div!
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+        attributes: true
+      });
+
+      logEvent('INFO', 'WeakSet registered. Full-Document MutationObserver watching <html>, <head>, and <body>.');
+
+      // Poll every 1.5s to catch extensions that injected before page load or use browser-level CSS filters
+      setInterval(() => {
+        if (!isLockedDown) runFullIntegrityAudit(false);
+      }, 1500);
+    });
+  </script>
 </body>
 </html>
